@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="media/favicon.ico">
+    <title>PropWash</title>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@v0.182.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.182.0/examples/jsm/"
+      }
+    }
+    </script>
+</head>
+
+<body style="margin:0; overflow:hidden;">
+    <script type="module">
+        //import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
+        import RAPIER from 'https://cdn.skypack.dev/pin/@dimforge/rapier3d-compat@v0.19.3-Hmo5REaX4aU99UROofMk/mode=imports,min/optimized/@dimforge/rapier3d-compat.js'
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const params = new URLSearchParams(window.location.search);
+        const debug = params.get('debug') === 'true';
+        const env = params.get('env') ?? 'pretoria_gardens_1k';
+        const map = params.get('map') ?? 'playground_2b';
+
+        window.THREE = THREE;
+
+        async function main() {
+
+            // Loaders
+            const hdrLoader = new HDRLoader();
+            const gltfLoader = new GLTFLoader();
+
+            // Load Resources
+            let [
+                rapier,
+                envMap,
+                terrainModel,
+                droneModel
+            ] = await Promise.all([
+                RAPIER.init(),
+                hdrLoader.loadAsync(`assets/envs/${env}.hdr`),
+                gltfLoader.loadAsync(`assets/maps/${map}.glb`),
+                gltfLoader.loadAsync('assets/drones/racing_drone_lite_graphics_version.glb')
+            ])
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Scene
+            const scene = new THREE.Scene();
+            window.scene = scene
+            scene.background = new THREE.Color(0x87ceeb);
+
+            // Lighting
+            envMap.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = envMap;
+            scene.background = envMap;
+
+            // Rapier World
+            const world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
+            const groundBody = world.createRigidBody(new RAPIER.RigidBodyDesc(RAPIER.RigidBodyType.Fixed).setTranslation(0, -1, 0));
+            world.createCollider(RAPIER.ColliderDesc.cuboid(50, 0.1, 50), groundBody);
+
+            // Drone
+            const droneSize = { x: 0.3, y: 0.06, z: 0.3 };
+            const droneBody = world.createRigidBody(
+                new RAPIER.RigidBodyDesc(RAPIER.RigidBodyType.Dynamic)
+                    .setTranslation(0, 5, 0)
+            );
+            droneBody.setLinearDamping(2.0);
+            droneBody.setAngularDamping(3.0);
+
+            const droneCollider = world.createCollider(
+                RAPIER.ColliderDesc.cuboid(droneSize.x / 2, droneSize.y / 2, droneSize.z / 2),
+                droneBody
+            );
+
+            let droneNode = new THREE.Object3D()
+            scene.add(droneNode)
+
+            let droneMesh = droneModel.scene
+            droneMesh.scale.set(0.03, 0.03, 0.03)
+            droneMesh.position.y = -0.02
+            droneNode.add(droneMesh);
+
+            if (debug) {
+                const droneBox = new THREE.Mesh(
+                    new THREE.BoxGeometry(droneSize.x, droneSize.y, droneSize.z),
+                    new THREE.MeshStandardMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 })
+                );
+                droneNode.add(droneBox);
+            }
+
+            const droneMixer = new THREE.AnimationMixer(droneMesh);
+            droneModel.animations.forEach((clip) => {
+                droneMixer.clipAction(clip).play();
+            });
+
+            // Camera
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            window.camera = camera
+            camera.position.set(0, -0.5, 1)
+            camera.lookAt(0, 0, 0)
+            droneNode.add(camera)
+
+            if (debug) {
+                const controls = new OrbitControls(camera, renderer.domElement);
+                controls.screenSpacePanning = false;
+                controls.minDistance = 1;
+                controls.maxDistance = 100;
+                controls.maxPolarAngle = Math.PI / 2;
+            }
+
+            // Debug
+            const debugGeometry = new THREE.BufferGeometry();
+            const debugMaterial = new THREE.LineBasicMaterial({ vertexColors: true });
+            const debugLines = new THREE.LineSegments(debugGeometry, debugMaterial);
+            debugLines.renderOrder = 999;
+            scene.add(debugLines);
+
+            // Terrain
+            let terrain = terrainModel.scene
+            scene.add(terrain);
+
+            terrain.updateWorldMatrix(true, true);
+            terrain.traverse((child) => {
+                // extract geometry for physics
+
+                if (!child.isMesh) return;
+
+                const geom = child.geometry;
+                const posAttr = geom.attributes.position;
+                const indexAttr = geom.index;
+
+                const worldMatrix = child.matrixWorld;
+                const v = new THREE.Vector3();
+
+                const worldPositions = new Float32Array(posAttr.count * 3);
+
+                for (let i = 0; i < posAttr.count; i++) {
+                    v.fromBufferAttribute(posAttr, i);
+                    v.applyMatrix4(worldMatrix);
+
+                    worldPositions[i * 3 + 0] = v.x;
+                    worldPositions[i * 3 + 1] = v.y;
+                    worldPositions[i * 3 + 2] = v.z;
+                }
+
+                const indices = indexAttr ? indexAttr.array : undefined;
+
+                const trimeshDesc = RAPIER.ColliderDesc.trimesh(worldPositions, indices);
+                world.createCollider(trimeshDesc);
+            });
+            if (debug) {
+                updateDebugRender()
+            }
+
+            // Gamepad Controls (Mode 2)
+            // Mode 2: left stick throttle/yaw, right stick pitch/roll
+            const maxThrust = 5.0;
+            const maxTilt = 0.05; // radians per frame
+
+            function handleGamepad() {
+                const gp = navigator.getGamepads()[0];
+
+                // Mode 2 sticks
+                // Helper for deadzone
+                const applyDeadzone = (value, deadzone = 0.15) => Math.abs(value) < deadzone ? 0 : value;
+
+                let throttleInput = 0
+                let yawInput = 0
+                let pitchInput = 0
+                let rollInput = 0
+
+                // Mode 2 sticks with deadzone
+                if (gp) {
+                    throttleInput = applyDeadzone(-gp.axes[1]); // left stick Y (throttle)
+                    yawInput = applyDeadzone(-gp.axes[0]);  // left stick X (yaw)
+                    pitchInput = applyDeadzone(gp.axes[3]); // right stick Y (pitch)
+                    rollInput = applyDeadzone(-gp.axes[2]);  // right stick X (roll)
+                }
+
+                let throttle = Math.pow(throttleInput * 0.5 + 0.5, 2)
+
+                const localForce = new RAPIER.Vector3(0, throttle * 0.2, 0); // up in local drone space
+                const localTorque = new RAPIER.Vector3(
+                    pitchInput * 0.0005,  // X rotation
+                    yawInput * 0.0005,    // Y rotation
+                    rollInput * 0.0005    // Z rotation
+                );
+
+                const rotation = droneBody.rotation();
+                const q = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+
+                const forceVec = new THREE.Vector3(localForce.x, localForce.y, localForce.z).applyQuaternion(q);
+                const torqueVec = new THREE.Vector3(localTorque.x, localTorque.y, localTorque.z).applyQuaternion(q);
+
+                droneBody.resetForces(true);
+                droneBody.resetTorques(true);
+
+                droneBody.addForce(new RAPIER.Vector3(forceVec.x, forceVec.y, forceVec.z), true);
+                droneBody.addTorque(new RAPIER.Vector3(torqueVec.x, torqueVec.y, torqueVec.z), true);
+
+            }
+
+            function updateDebugRender() {
+                const { vertices, colors } = world.debugRender();
+
+                const positions = new Float32Array(vertices);
+                const colorArray = new Float32Array(colors);
+
+                debugGeometry.setAttribute(
+                    'position',
+                    new THREE.BufferAttribute(positions, 3)
+                );
+
+                debugGeometry.setAttribute(
+                    'color',
+                    new THREE.BufferAttribute(colorArray, 4)
+                );
+
+                debugGeometry.computeBoundingSphere();
+            }
+
+
+            // Camera follows drone (bird view behind)
+            function updateCamera() {
+                // const t = droneBody.translation();
+                // const offset = new THREE.Vector3(0, 0.3, 1); // 1m behind, 0.3m up
+                // const back = new THREE.Vector3(0, 0, 1).applyQuaternion(droneNode.quaternion).multiplyScalar(1);
+                // camera.position.set(t.x - back.x, t.y + 0.3, t.z - back.z);
+                // camera.lookAt(t.x, t.y, t.z);
+            }
+
+            // Animate Loop
+            const dt = 1 / 60;
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // physics step
+                world.step();
+
+                // update drone mesh
+                const pos = droneBody.translation();
+                const rot = droneBody.rotation();
+                droneNode.position.set(pos.x, pos.y, pos.z);
+                droneNode.quaternion.set(rot.x, rot.y, rot.z, rot.w);
+
+                handleGamepad();
+                updateCamera();
+
+                droneMixer.setTime(Math.random() * 1000)
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        main()
+
+    </script>
+</body>
+
+</html>
