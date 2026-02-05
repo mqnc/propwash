@@ -3,6 +3,12 @@ Drone Simulator
 
 everything is in prototype phase
 
+## Demos
+
+[Playground](https://mqnc.github.io/propwash/?map=playground_2b&env=pretoria_gardens_1k)
+
+[Bando](https://mqnc.github.io/propwash/?map=post-apocalyptic_city&env=qwantani_night_1k)
+
 ## Attributions
 
 The assets used in this project are under Creative Commons licenses. They are **not relicensed under MIT** unless explicitly noted.  
