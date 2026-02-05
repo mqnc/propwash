@@ -1,7 +1,7 @@
 # propwash
 Drone Simulator
 
-everything is in prototype phase
+everything is in prototype phase; only gamepad control possible right now
 
 ## Demos
 
@@ -26,9 +26,12 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 ## Todo
 
+* kbd+mouse control
+* reset position when turtleing
 * switch fpv/3rd person camera
 * autoleveling
 * make everything configurable
 * proper drone physics
+* sound
 * proper graphics (AO, shadows, motion blur)
 * tasks (at least checkpoints)
