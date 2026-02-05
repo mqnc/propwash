@@ -23,3 +23,12 @@ The assets used in this project are under Creative Commons licenses. They are **
 | [Amusement park](https://skfb.ly/p7GFu) | [Megame Studio](https://sketchfab.com/megame1) | CC BY-NC-SA 4.0 |
 | [Pretoria Gardens](https://polyhaven.com/a/pretoria_gardens) | [Dimitrios Savva](https://polyhaven.com/all?a=Dimitrios%20Savva), [Jarod Guest](https://polyhaven.com/all?a=Jarod%20Guest) | CC0 |
 | [Qwantani Night](https://polyhaven.com/a/qwantani_night) | [Greg Zaal](https://polyhaven.com/all?a=Greg%20Zaal), [Jarod Guest](https://polyhaven.com/all?a=Jarod%20Guest) | CC0 |
+
+## Todo
+
+* switch fpv/3rd person camera
+* autoleveling
+* make everything configurable
+* proper drone physics
+* proper graphics (AO, shadows, motion blur)
+* tasks (at least checkpoints)
