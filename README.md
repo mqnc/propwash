@@ -1,5 +1,5 @@
 # propwash
-Drone Simulator
+FPV drone simulator for the web
 
 everything is in prototype phase; only gamepad control possible right now
 
@@ -26,6 +26,7 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 ## Todo
 
+* cooler name?
 * kbd+mouse control
 * reset position when turtleing
 * switch fpv/3rd person camera
