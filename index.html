@@ -38,6 +38,7 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { controlInputs } from './controls.js'
 
         const params = new URLSearchParams(window.location.search);
         const debug = params.get('debug') === 'true';
@@ -68,7 +69,17 @@
             // Renderer
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            const canvas = renderer.domElement;
+            document.body.appendChild(canvas);
+            canvas.addEventListener("click", e => {
+                if (e.button !== 0) return;
+
+                if (document.pointerLockElement === null) {
+                    canvas.requestPointerLock();
+                } else {
+                    document.exitPointerLock();
+                }
+            });
 
             // Scene
             const scene = new THREE.Scene();
@@ -123,16 +134,20 @@
             // Camera
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             window.camera = camera
-            camera.position.set(0, -0.5, 1)
-            camera.lookAt(0, 0, 0)
             droneNode.add(camera)
 
-            if (debug) {
-                const controls = new OrbitControls(camera, renderer.domElement);
-                controls.screenSpacePanning = false;
-                controls.minDistance = 1;
-                controls.maxDistance = 100;
-                controls.maxPolarAngle = Math.PI / 2;
+            const camDummy = new THREE.PerspectiveCamera();
+            scene.add(camDummy);
+            camDummy.position.set(0, 0.2, 1)
+            camDummy.lookAt(0, 0, 0)
+            const orbit = new OrbitControls(camDummy, renderer.domElement);
+            orbit.update()
+            orbit.screenSpacePanning = true;
+            orbit.minDistance = 0.3;
+            orbit.maxDistance = 3;
+            orbit.mouseButtons = {
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.ROTATE
             }
 
             // Debug
@@ -181,30 +196,11 @@
 
             // Gamepad Controls (Mode 2)
             // Mode 2: left stick throttle/yaw, right stick pitch/roll
-            const maxThrust = 5.0;
-            const maxTilt = 0.05; // radians per frame
-
             function handleGamepad() {
-                const gp = navigator.getGamepads()[0];
 
-                // Mode 2 sticks
-                // Helper for deadzone
-                const applyDeadzone = (value, deadzone = 0.15) => Math.abs(value) < deadzone ? 0 : value;
+                const { throttleInput, yawInput, pitchInput, rollInput } = controlInputs()
 
-                let throttleInput = 0
-                let yawInput = 0
-                let pitchInput = 0
-                let rollInput = 0
-
-                // Mode 2 sticks with deadzone
-                if (gp) {
-                    throttleInput = applyDeadzone(-gp.axes[1]); // left stick Y (throttle)
-                    yawInput = applyDeadzone(-gp.axes[0]);  // left stick X (yaw)
-                    pitchInput = applyDeadzone(gp.axes[3]); // right stick Y (pitch)
-                    rollInput = applyDeadzone(-gp.axes[2]);  // right stick X (roll)
-                }
-
-                let throttle = Math.pow(throttleInput * 0.5 + 0.5, 2)
+                const throttle = Math.pow(throttleInput, 2);
 
                 const localForce = new RAPIER.Vector3(0, throttle * 0.2, 0); // up in local drone space
                 const localTorque = new RAPIER.Vector3(
@@ -247,13 +243,9 @@
             }
 
 
-            // Camera follows drone (bird view behind)
             function updateCamera() {
-                // const t = droneBody.translation();
-                // const offset = new THREE.Vector3(0, 0.3, 1); // 1m behind, 0.3m up
-                // const back = new THREE.Vector3(0, 0, 1).applyQuaternion(droneNode.quaternion).multiplyScalar(1);
-                // camera.position.set(t.x - back.x, t.y + 0.3, t.z - back.z);
-                // camera.lookAt(t.x, t.y, t.z);
+                camera.position.copy(camDummy.position);
+                camera.quaternion.copy(camDummy.quaternion);
             }
 
             // Animate Loop
