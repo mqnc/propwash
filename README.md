@@ -1,7 +1,12 @@
 # propwash
 FPV drone simulator for the web
 
-everything is in prototype phase; only gamepad control possible right now
+Everything is still in prototype phase!
+
+* Use WASD as the left stick, mouse as the right stick (need to click into the game window to capture the mouse first)
+* Keys 1-4 switch between the different drone control modes with mode 2 as default
+* Right click and mouse wheel for camera orbit controls
+* If you got stuck, you need to refresh the page 😬
 
 ## Demos
 
@@ -29,8 +34,9 @@ The assets used in this project are under Creative Commons licenses. They are **
 * cooler name?
 * use common coordinate system for drone
 * reset position when turtleing
+* actually, anti turtleing
 * switch fpv/3rd person camera
-* autoleveling
+* stabilization and tilt limiting
 * make everything configurable
 * proper drone physics
 * sound
