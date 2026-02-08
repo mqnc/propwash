@@ -27,7 +27,7 @@ The assets used in this project are under Creative Commons licenses. They are **
 ## Todo
 
 * cooler name?
-* kbd+mouse control
+* use common coordinate system for drone
 * reset position when turtleing
 * switch fpv/3rd person camera
 * autoleveling
