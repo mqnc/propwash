@@ -133,9 +133,9 @@
 
             // Camera
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            window.camera = camera
-            droneNode.add(camera)
+            scene.add(camera)
 
+            // orbit controls do not work with a parent object, so we need to create a global dummy camera and copy its pose to the drone camera
             const camDummy = new THREE.PerspectiveCamera();
             scene.add(camDummy);
             camDummy.position.set(0, 0.2, 1)
@@ -149,6 +149,9 @@
                 MIDDLE: THREE.MOUSE.DOLLY,
                 RIGHT: THREE.MOUSE.ROTATE
             }
+            // target pose for camera which it will follow with some PT1 smoothing
+            const camTarget = new THREE.Object3D()
+            droneNode.add(camTarget)
 
             // Debug
             const debugGeometry = new THREE.BufferGeometry();
@@ -242,10 +245,31 @@
                 debugGeometry.computeBoundingSphere();
             }
 
-
+            const raycaster = new THREE.Raycaster();
+            
             function updateCamera() {
-                camera.position.copy(camDummy.position);
-                camera.quaternion.copy(camDummy.quaternion);
+                const fraction = 0.5
+                let viewDir = camDummy.position.clone()
+                droneNode.localToWorld(viewDir)
+                viewDir.sub(droneNode.position)
+                let far = viewDir.length()
+                viewDir.normalize()
+                raycaster.set(droneNode.position, viewDir)
+                raycaster.far = far / fraction
+                const intersects = raycaster.intersectObject(terrain, true)
+                if (intersects.length > 0) {
+                    const intersect = intersects[0]
+                    camTarget.position.copy(intersect.point)
+                    droneNode.worldToLocal(camTarget.position)
+                    camTarget.position.multiplyScalar(fraction)
+                }
+                else {
+                    camTarget.position.copy(camDummy.position);
+                }
+                camTarget.quaternion.copy(camDummy.quaternion);
+                
+                camera.position.lerp(camTarget.getWorldPosition(new THREE.Vector3()), 0.45)
+                camera.quaternion.slerp(camTarget.getWorldQuaternion(new THREE.Quaternion()), 0.3)
             }
 
             // Animate Loop
