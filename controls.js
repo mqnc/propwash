@@ -57,8 +57,8 @@ export function controlInputs() {
     }
 
     // wasd = left stick
-    let targetX = (keyDown['KeyD'] ? 1 : 0) - (keyDown['KeyA'] ? 1 : 0);
-    let targetY = (keyDown['KeyW'] ? 1 : 0) - (keyDown['KeyS'] ? 1 : 0);
+    let targetX = (keyDown['KeyD'] || keyDown['ArrowRight'] ? 1 : 0) - (keyDown['KeyA'] || keyDown['ArrowLeft'] ? 1 : 0);
+    let targetY = (keyDown['KeyW'] || keyDown['ArrowUp'] ? 1 : 0) - (keyDown['KeyS'] || keyDown['ArrowDown'] ? 1 : 0);
 
     let q = dt / (TAU_KBD + dt);
 
