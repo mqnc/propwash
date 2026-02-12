@@ -18,17 +18,41 @@
 
 <body style="margin:0; overflow:hidden; background-color: #123456;">
 
-    <div style="
-        position:fixed;
+    <div id="battery" style="
+        height:33.333vh;
+        width:calc(33.333vh * 0.3);
+        position:absolute;
         top:50%;
         left:50%;
-        transform:translate(-50%, -50%);
-        font-family:sans-serif;
-        font-size:72px;
-        color:white;
-        z-index: -1000;
+        transform:translate(-50%,-50%);
+        border:4px solid white;
+        border-radius:20px;
+        box-sizing:border-box;
+        padding:10px;
+        display:flex;
+        flex-direction:column;
+        justify-content:flex-end;
+        pointer-events: none;
     ">
-        loading...
+        <div id="progress" style="
+            height:0%;
+            width:100%;
+            background:lime;
+            border-radius:4px;
+            position:relative;
+            overflow:hidden;
+        "></div>
+        <span id="clickLabel" style="
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%) rotate(-90deg);
+            white-space:nowrap;
+            font-size:5vh;
+            font-family:monospace;
+            font-weight:bold;
+            color:#123456;
+        ">Click!</span>
     </div>
 
     <script type="module">
@@ -49,28 +73,65 @@
 
         async function main() {
 
-            // Loaders
-            const hdrLoader = new HDRLoader();
-            const gltfLoader = new GLTFLoader();
-
-            // Load Resources
-            let [
-                rapier,
-                envMap,
-                terrainModel,
-                droneModel
-            ] = await Promise.all([
-                RAPIER.init(),
-                hdrLoader.loadAsync(`assets/envs/${env}.hdr`),
-                gltfLoader.loadAsync(`assets/maps/${map}.glb`),
-                gltfLoader.loadAsync('assets/drones/racing_drone_lite_graphics_version.glb')
-            ])
-
             // Renderer
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             const canvas = renderer.domElement;
             document.body.appendChild(canvas);
+
+            // Loaders
+            const hdrLoader = new HDRLoader();
+            const gltfLoader = new GLTFLoader();
+            const audioLoader = new THREE.AudioLoader();
+
+            function waitForClick(target = canvas) {
+                return new Promise(resolve => {
+                    target.addEventListener('click', () => {
+                        canvas.requestPointerLock()
+                        document.getElementById('clickLabel').style.display = 'none'
+                        resolve();
+                    }, { once: true });
+                });
+            }
+
+            // Load Resources
+            let progressList = {}
+            let loaderCounter = 0
+            function progressCallbackFactory() {
+                const loaderId = loaderCounter++
+                return (e) => {
+                    progressList[loaderId] = [e.loaded, e.total]
+                    if (Object.keys(progressList).length === loaderCounter) {
+                        let loaded = 0, total = 0
+                        for (const progress of Object.values(progressList)) {
+                            loaded += progress[0]
+                            total += progress[1]
+                        }
+                        document.getElementById('progress').style.height = `${100 * loaded / total}%`
+                    }
+                }
+            }
+
+            let [
+                rapier,
+                envMap,
+                terrainModel,
+                droneModel,
+                propWav,
+                musicWav,
+                clicked
+            ] = await Promise.all([
+                RAPIER.init(),
+                hdrLoader.loadAsync(`assets/envs/${env}.hdr`, progressCallbackFactory()),
+                gltfLoader.loadAsync(`assets/maps/${map}.glb`, progressCallbackFactory()),
+                gltfLoader.loadAsync('assets/drones/racing_drone_lite_graphics_version.glb', progressCallbackFactory()),
+                audioLoader.loadAsync('assets/sound/prop_loop.mp3', progressCallbackFactory()),
+                audioLoader.loadAsync('assets/music/fsm-team-escp-magenta-metropolis.mp3', progressCallbackFactory()),
+                waitForClick()
+            ])
+
+            document.getElementById('battery').style.display = 'none'
+
             canvas.addEventListener("click", e => {
                 if (e.button !== 0) return;
 
@@ -127,9 +188,7 @@
             }
 
             const droneMixer = new THREE.AnimationMixer(droneMesh);
-            droneModel.animations.forEach((clip) => {
-                droneMixer.clipAction(clip).play();
-            });
+            droneModel.animations.forEach((clip) => { droneMixer.clipAction(clip).play(); });
 
             // Camera
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -138,7 +197,7 @@
             // orbit controls do not work with a parent object, so we need to create a global dummy camera and copy its pose to the drone camera
             const camDummy = new THREE.PerspectiveCamera();
             scene.add(camDummy);
-            camDummy.position.set(0, 0.2, 1)
+            camDummy.position.set(0, -0.4, 1)
             camDummy.lookAt(0, 0, 0)
             const orbit = new OrbitControls(camDummy, renderer.domElement);
             orbit.update()
@@ -197,13 +256,58 @@
                 updateDebugRender()
             }
 
-            // Gamepad Controls (Mode 2)
-            // Mode 2: left stick throttle/yaw, right stick pitch/roll
-            function handleGamepad() {
+            // Sound
+            const listener = new THREE.AudioListener();
+            camera.add(listener);
+            const propSounds = []
+            const baseFrequency = 900;
+            for (let i = 0; i < 4; i++) {
+                const sound = new THREE.PositionalAudio(listener);
+                sound.setBuffer(propWav);
+                sound.setLoop(true);
+                // work around for this: https://discourse.threejs.org/t/start-audio-with-correct-volume-instead-of-quickly-ramping-down-from-100/89793
+                sound.gain.gain.value = 0.00;
+                setTimeout(() => sound.setVolume(0.03), 50);
+                sound.play();
+                droneNode.add(sound);
+                propSounds.push(sound)
+            }
+            function setFrequency(iMotor, frequency) {
+                const factor = frequency / baseFrequency;
+                const octaves = Math.log2(factor);
+                const cents = octaves * 1200
+                propSounds[iMotor].setDetune(cents)
+            }
+            const music = new THREE.Audio(listener);
+            music.setBuffer(musicWav);
+            music.setLoop(true);
+            music.setVolume(0.15);
+            music.play();
+
+            // Controls
+            function handleControls() {
 
                 const { throttleInput, yawInput, pitchInput, rollInput } = controlInputs()
 
+                let t = performance.now() / 1000
+                let frequencies = [
+                    480 + 3 * Math.sin(t),
+                    485 + 2 * Math.sin(t * 0.91245142),
+                    490 + 5 * Math.sin(t * 0.85234134),
+                    495 + 4 * Math.sin(t * 0.73514635)
+                ]
+
                 const throttle = Math.pow(throttleInput, 2);
+
+                frequencies[0] += + pitchInput * 20 + yawInput * 20 + rollInput * 20
+                frequencies[1] += + pitchInput * 20 - yawInput * 20 - rollInput * 20
+                frequencies[2] += - pitchInput * 20 + yawInput * 20 - rollInput * 20
+                frequencies[3] += - pitchInput * 20 - yawInput * 20 + rollInput * 20
+
+                for (let i = 0; i < 4; i++) {
+                    frequencies[i] += throttle * 300
+                    setFrequency(i, frequencies[i])
+                }
 
                 const localForce = new RAPIER.Vector3(0, throttle * 0.2, 0); // up in local drone space
                 const localTorque = new RAPIER.Vector3(
@@ -246,7 +350,7 @@
             }
 
             const raycaster = new THREE.Raycaster();
-            
+
             function updateCamera() {
                 const fraction = 0.5
                 let viewDir = camDummy.position.clone()
@@ -267,7 +371,7 @@
                     camTarget.position.copy(camDummy.position);
                 }
                 camTarget.quaternion.copy(camDummy.quaternion);
-                
+
                 camera.position.lerp(camTarget.getWorldPosition(new THREE.Vector3()), 0.45)
                 camera.quaternion.slerp(camTarget.getWorldQuaternion(new THREE.Quaternion()), 0.3)
             }
@@ -286,7 +390,7 @@
                 droneNode.position.set(pos.x, pos.y, pos.z);
                 droneNode.quaternion.set(rot.x, rot.y, rot.z, rot.w);
 
-                handleGamepad();
+                handleControls();
                 updateCamera();
 
                 droneMixer.setTime(Math.random() * 1000)
