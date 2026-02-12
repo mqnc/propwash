@@ -101,6 +101,7 @@
                 const loaderId = loaderCounter++
                 return (e) => {
                     progressList[loaderId] = [e.loaded, e.total]
+                    console.log(e.loaded, e.total)
                     if (Object.keys(progressList).length === loaderCounter) {
                         let loaded = 0, total = 0
                         for (const progress of Object.values(progressList)) {
