@@ -56,6 +56,7 @@
     </div>
 
     <script type="module">
+        import JSON5 from 'https://unpkg.com/json5@2/dist/index.min.mjs'
         //import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
         import RAPIER from 'https://cdn.skypack.dev/pin/@dimforge/rapier3d-compat@v0.19.3-Hmo5REaX4aU99UROofMk/mode=imports,min/optimized/@dimforge/rapier3d-compat.js'
         import * as THREE from 'three';
@@ -63,15 +64,34 @@
         import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { controlInputs } from './controls.js'
+        import Stats from 'three/addons/libs/stats.module.js';
+
+        const dt = 1.0 / 100.0; // physics timestep
 
         const params = new URLSearchParams(window.location.search);
         const debug = params.get('debug') === 'true';
-        const env = params.get('env') ?? 'pretoria_gardens_1k';
-        const map = params.get('map') ?? 'playground_2b';
+        const configUrl = params.get('config') ?? 'configs/default.json5';
 
         window.THREE = THREE;
+        const pi = Math.PI
+        const deg = pi / 180
+        const inch = 0.0254
+        THREE.Euler.prototype.setFromRPYdeg = function (rpy) {
+            const [r, p, y] = rpy;
+            // note that 'ZYX' is only the order of application, the order of arguments is still x y z
+            this.set(r * deg, p * deg, y * deg, 'ZYX');
+            return this;
+        }
+        function rpyDegToQuat(rpy) {
+            return new THREE.Quaternion().setFromEuler((new THREE.Euler()).setFromRPYdeg(rpy));
+        }
 
         async function main() {
+
+            // load config
+            const config = JSON5.parse(await (await fetch(configUrl)).text());
+            console.assert(config.version == 1.0)
+            console.assert(config.aircraft.type == "quadcopter")
 
             // Renderer
             const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -115,20 +135,22 @@
 
             let [
                 rapier,
-                envMap,
-                terrainModel,
                 droneModel,
                 propWav,
+                terrainModel,
+                bgMap,
+                envMap,
                 musicWav,
                 clicked
             ] = await Promise.all([
-                RAPIER.init(),
-                hdrLoader.loadAsync(`assets/envs/${env}.hdr`, progressCallbackFactory()),
-                gltfLoader.loadAsync(`assets/maps/${map}.glb`, progressCallbackFactory()),
-                gltfLoader.loadAsync('assets/drones/racing_drone_lite_graphics_version.glb', progressCallbackFactory()),
-                audioLoader.loadAsync('assets/sound/prop_loop.mp3', progressCallbackFactory()),
-                audioLoader.loadAsync('assets/music/fsm-team-escp-magenta-metropolis.mp3', progressCallbackFactory()),
-                waitForClick()
+                /* rapier = */ RAPIER.init(),
+                /* droneModel = */ gltfLoader.loadAsync(config.aircraft.model.path, progressCallbackFactory()),
+                /* propWav = */ audioLoader.loadAsync(config.aircraft.propSound.path, progressCallbackFactory()),
+                /* terrainModel = */ gltfLoader.loadAsync(config.map.model.path, progressCallbackFactory()),
+                /* bgMap = */ hdrLoader.loadAsync(config.background.backgroundMap.path, progressCallbackFactory()),
+                /* envMap = */ hdrLoader.loadAsync(config.background.environmentMap.path, progressCallbackFactory()),
+                /* musicWav = */ audioLoader.loadAsync(config.background.music.path, progressCallbackFactory()),
+                /* clicked = */ waitForClick()
             ])
 
             document.getElementById('battery').style.display = 'none'
@@ -143,48 +165,99 @@
                 }
             });
 
+            // Stats
+            let engineStats = new Stats()
+            engineStats.showPanel(0)
+            engineStats.dom.style.cssText = 'position:absolute;top:10px;left:100px;';
+            document.body.appendChild(engineStats.dom)
+
+            let graphicsStats = new Stats()
+            graphicsStats.showPanel(0)
+            graphicsStats.dom.style.cssText = 'position:absolute;top:10px;left:10px;';
+            document.body.appendChild(graphicsStats.dom)
+
+
             // Scene
             const scene = new THREE.Scene();
             window.scene = scene
             scene.background = new THREE.Color(0x87ceeb);
+            if (debug) { scene.add(new THREE.AxesHelper(1)); }
+            THREE.Object3D.DEFAULT_UP = new THREE.Vector3(
+                -config.map.gravity[0],
+                -config.map.gravity[1],
+                -config.map.gravity[2]
+            )
+            const g = THREE.Object3D.DEFAULT_UP.length()
+            THREE.Object3D.DEFAULT_UP.normalize()
 
             // Lighting
             envMap.mapping = THREE.EquirectangularReflectionMapping;
             scene.environment = envMap;
-            scene.background = envMap;
+            scene.environmentRotation.setFromRPYdeg(config.background.environmentMap.rollPitchYaw);
+            bgMap.mapping = THREE.EquirectangularReflectionMapping;
+            scene.background = bgMap;
+            scene.backgroundRotation.setFromRPYdeg(config.background.backgroundMap.rollPitchYaw);
 
             // Rapier World
-            const world = new RAPIER.World({ x: 0.0, y: -9.81, z: 0.0 });
-            const groundBody = world.createRigidBody(new RAPIER.RigidBodyDesc(RAPIER.RigidBodyType.Fixed).setTranslation(0, -1, 0));
-            world.createCollider(RAPIER.ColliderDesc.cuboid(50, 0.1, 50), groundBody);
+            const world = new RAPIER.World({
+                x: config.map.gravity[0],
+                y: config.map.gravity[1],
+                z: config.map.gravity[2]
+            });
+            world.timestep = dt * config.map.timeScale
+            // const groundBody = world.createRigidBody(new RAPIER.RigidBodyDesc(RAPIER.RigidBodyType.Fixed).setTranslation(0, -1, 0));
+            // world.createCollider(RAPIER.ColliderDesc.cuboid(50, 0.1, 50), groundBody);
 
             // Drone
-            const droneSize = { x: 0.3, y: 0.06, z: 0.3 };
-            const droneBody = world.createRigidBody(
-                new RAPIER.RigidBodyDesc(RAPIER.RigidBodyType.Dynamic)
-                    .setTranslation(0, 5, 0)
-            );
-            droneBody.setLinearDamping(2.0);
-            droneBody.setAngularDamping(3.0);
+            const droneSize = config.aircraft.boundingBox.size;
+            let ixx, iyy, izz;
+            function createDroneBody() {
+                // extra function to limit auxiliary variable scope
+                const [w, h, d] = config.aircraft.boundingBox.size;
+                const m = config.aircraft.mass;
+                // we just use bounding box for inertia; tilt rates are controlled anyway
+                ixx = 1 / 12 * m * (h * h + d * d);
+                iyy = 1 / 12 * m * (w * w + d * d);
+                izz = 1 / 12 * m * (w * w + h * h);
+                return world.createRigidBody(
+                    new RAPIER.RigidBodyDesc(RAPIER.RigidBodyType.Dynamic)
+                        .setTranslation(...config.map.spawn.position)
+                        .setRotation(rpyDegToQuat(config.map.spawn.rollPitchYaw))
+                        .setAdditionalMassProperties(
+                            config.aircraft.mass,
+                            { x: 0.0, y: 0.0, z: 0.0 },
+                            { x: ixx, y: iyy, z: izz, },
+                            { x: 0.0, y: 0.0, z: 0.0, w: 1.0 }
+                        )
+                );
+            }
+            const droneBody = createDroneBody();
+            droneBody.setLinearDamping(0.0);
+            droneBody.setAngularDamping(0.0);
 
-            const droneCollider = world.createCollider(
-                RAPIER.ColliderDesc.cuboid(droneSize.x / 2, droneSize.y / 2, droneSize.z / 2),
-                droneBody
-            );
+            let droneDesc = RAPIER.ColliderDesc
+                .cuboid(droneSize[0] / 2, droneSize[1] / 2, droneSize[2] / 2)
+                .setTranslation(...config.aircraft.boundingBox.position)
+                .setDensity(0);
+
+            const droneCollider = world.createCollider(droneDesc, droneBody);
 
             let droneNode = new THREE.Object3D()
             scene.add(droneNode)
 
             let droneMesh = droneModel.scene
-            droneMesh.scale.set(0.03, 0.03, 0.03)
-            droneMesh.position.y = -0.02
+            droneMesh.scale.set(...config.aircraft.model.scale)
+            droneMesh.position.set(...config.aircraft.model.position)
+            droneMesh.quaternion.copy(rpyDegToQuat(config.aircraft.model.rollPitchYaw))
             droneNode.add(droneMesh);
+            droneNode.add(new THREE.AxesHelper(0.1));
 
             if (debug) {
                 const droneBox = new THREE.Mesh(
-                    new THREE.BoxGeometry(droneSize.x, droneSize.y, droneSize.z),
+                    new THREE.BoxGeometry(...droneSize),
                     new THREE.MeshStandardMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 })
                 );
+                droneBox.position.set(...config.aircraft.boundingBox.position)
                 droneNode.add(droneBox);
             }
 
@@ -198,7 +271,7 @@
             // orbit controls do not work with a parent object, so we need to create a global dummy camera and copy its pose to the drone camera
             const camDummy = new THREE.PerspectiveCamera();
             scene.add(camDummy);
-            camDummy.position.set(0, -0.4, 1)
+            camDummy.position.set(-1, 0, 0.4)
             camDummy.lookAt(0, 0, 0)
             const orbit = new OrbitControls(camDummy, renderer.domElement);
             orbit.update()
@@ -223,6 +296,9 @@
             // Terrain
             let terrain = terrainModel.scene
             scene.add(terrain);
+            terrain.position.set(...config.map.model.position)
+            terrain.quaternion.copy(rpyDegToQuat(config.map.model.rollPitchYaw))
+            terrain.scale.set(...config.map.model.scale)
 
             terrain.updateWorldMatrix(true, true);
             terrain.traverse((child) => {
@@ -253,28 +329,27 @@
                 const trimeshDesc = RAPIER.ColliderDesc.trimesh(worldPositions, indices);
                 world.createCollider(trimeshDesc);
             });
-            if (debug) {
-                updateDebugRender()
-            }
 
             // Sound
             const listener = new THREE.AudioListener();
             camera.add(listener);
             const propSounds = []
-            const baseFrequency = 900;
+            const maxThrustFrequency = config.aircraft.propSound.maxThrustRPM / 60.0 * config.aircraft.propSound.numBlades
+            const tiltDeltaFrequency = config.aircraft.propSound.tiltDeltaRPM / 60.0 * config.aircraft.propSound.numBlades
+            const oscillateFrequency = config.aircraft.propSound.oscillateRPM / 60.0 * config.aircraft.propSound.numBlades
             for (let i = 0; i < 4; i++) {
                 const sound = new THREE.PositionalAudio(listener);
                 sound.setBuffer(propWav);
                 sound.setLoop(true);
                 // work around for this: https://discourse.threejs.org/t/start-audio-with-correct-volume-instead-of-quickly-ramping-down-from-100/89793
                 sound.gain.gain.value = 0.00;
-                setTimeout(() => sound.setVolume(0.03), 50);
+                setTimeout(() => sound.setVolume(config.aircraft.propSound.volume), 50);
                 sound.play();
                 droneNode.add(sound);
                 propSounds.push(sound)
             }
             function setFrequency(iMotor, frequency) {
-                const factor = frequency / baseFrequency;
+                const factor = frequency / config.aircraft.propSound.recordingFrequency;
                 const octaves = Math.log2(factor);
                 const cents = octaves * 1200
                 propSounds[iMotor].setDetune(cents)
@@ -282,52 +357,92 @@
             const music = new THREE.Audio(listener);
             music.setBuffer(musicWav);
             music.setLoop(true);
-            music.setVolume(0.15);
+            music.setVolume(config.background.music.volume);
             music.play();
 
             // Controls
+            const maxSingleMotorThrust = config.aircraft.maxCombinedThrust / 4
+            const lever = config.aircraft.wheelbase * 0.5 * Math.SQRT1_2 // from center of mass to motor along x or y
+            const maxPitchRollTorque = 4 * lever * maxSingleMotorThrust
+            const maxMotorDrag = 0.07 * maxSingleMotorThrust * (config.aircraft.propSize * inch) // according to ChatGPT
+            const maxYawTorque = 2 * (config.aircraft.wheelbase / 2) * maxSingleMotorThrust
+            const hoverThrottle = g * config.aircraft.mass / config.aircraft.maxCombinedThrust
+
             function handleControls() {
 
-                const { throttleInput, yawInput, pitchInput, rollInput } = controlInputs()
+                const { throttleInput, yawInput, pitchInput, rollInput } = controlInputs(dt)
+
+                // make it so that the drone hovers when the stick is in the middle
+                let throttle;
+                if (throttleInput <= 0.5) {
+                    throttle = throttleInput * 2 * hoverThrottle
+                }
+                else {
+                    throttle = hoverThrottle + (throttleInput * 2 - 1) * (1 - hoverThrottle)
+                }
 
                 let t = performance.now() / 1000
                 let frequencies = [
-                    480 + 3 * Math.sin(t),
-                    485 + 2 * Math.sin(t * 0.91245142),
-                    490 + 5 * Math.sin(t * 0.85234134),
-                    495 + 4 * Math.sin(t * 0.73514635)
+                    maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t + 4)
+                    + (+ pitchInput + yawInput + rollInput) * tiltDeltaFrequency,
+                    maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t * 0.91245142 + 5)
+                    + (+ pitchInput - yawInput - rollInput) * tiltDeltaFrequency,
+                    maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t * 0.85234134 + 7)
+                    + (- pitchInput + yawInput - rollInput) * tiltDeltaFrequency,
+                    maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t * 0.73514635 + 20)
+                    + (- pitchInput - yawInput + rollInput) * tiltDeltaFrequency
                 ]
 
-                const throttle = Math.pow(throttleInput, 2);
-
-                frequencies[0] += + pitchInput * 20 + yawInput * 20 + rollInput * 20
-                frequencies[1] += + pitchInput * 20 - yawInput * 20 - rollInput * 20
-                frequencies[2] += - pitchInput * 20 + yawInput * 20 - rollInput * 20
-                frequencies[3] += - pitchInput * 20 - yawInput * 20 + rollInput * 20
-
                 for (let i = 0; i < 4; i++) {
-                    frequencies[i] += throttle * 300
+                    frequencies[i] = Math.max(100, frequencies[i])
                     setFrequency(i, frequencies[i])
                 }
 
-                const localForce = new RAPIER.Vector3(0, throttle * 0.2, 0); // up in local drone space
-                const localTorque = new RAPIER.Vector3(
-                    pitchInput * 0.0005,  // X rotation
-                    yawInput * 0.0005,    // Y rotation
-                    rollInput * 0.0005    // Z rotation
-                );
-
                 const rotation = droneBody.rotation();
                 const q = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+                const qInv = q.clone().invert();
 
-                const forceVec = new THREE.Vector3(localForce.x, localForce.y, localForce.z).applyQuaternion(q);
-                const torqueVec = new THREE.Vector3(localTorque.x, localTorque.y, localTorque.z).applyQuaternion(q);
+                const linvel = droneBody.linvel();
+                const angvel = droneBody.angvel();
+                const localLinearVelocity = new THREE.Vector3(linvel.x, linvel.y, linvel.z).applyQuaternion(qInv);
+                const localAngularVelocity = new THREE.Vector3(angvel.x, angvel.y, angvel.z).applyQuaternion(qInv);
+
+                const localTargetAngularVelocity = new THREE.Vector3(
+                    rollInput * config.aircraft.maxRollRate * deg,
+                    pitchInput * config.aircraft.maxPitchRate * deg,
+                    yawInput * config.aircraft.maxYawRate * deg,
+                );
+
+                const localForce = new RAPIER.Vector3(0, 0, -throttle * config.aircraft.maxCombinedThrust);
+                const localTorque = new RAPIER.Vector3(
+                    (localTargetAngularVelocity.x - localAngularVelocity.x) * ixx / config.aircraft.rollTimeConstant,
+                    (localTargetAngularVelocity.y - localAngularVelocity.y) * iyy / config.aircraft.pitchTimeConstant,
+                    (localTargetAngularVelocity.z - localAngularVelocity.z) * izz / config.aircraft.yawTimeConstant,
+                );
+
+                if (Math.abs(localTorque.x) > maxPitchRollTorque) { localTorque.x = maxPitchRollTorque * Math.sign(localTorque.x) }
+                if (Math.abs(localTorque.y) > maxPitchRollTorque) { localTorque.y = maxPitchRollTorque * Math.sign(localTorque.y) }
+                if (Math.abs(localTorque.z) > maxYawTorque) { localTorque.z = maxYawTorque * Math.sign(localTorque.z) }
+
+                const thrustForce = new THREE.Vector3(localForce.x, localForce.y, localForce.z).applyQuaternion(q);
+                const thrustTorque = new THREE.Vector3(localTorque.x, localTorque.y, localTorque.z).applyQuaternion(q);
+
+                const [vx, vy, vz] = localLinearVelocity.toArray();
+                const [wx, wy, wz] = localAngularVelocity.toArray();
+                const d = config.aircraft.dragForceOverSpeed
+                const d2 = config.aircraft.dragForceOverSpeedSquared
+                const dragForce = new THREE.Vector3(
+                    -d[0] * vx - d2[0] * vx * Math.abs(vx),
+                    -d[1] * vy - d2[1] * vy * Math.abs(vy),
+                    -d[2] * vz - d2[2] * vz * Math.abs(vz),
+                ).applyQuaternion(q);
 
                 droneBody.resetForces(true);
                 droneBody.resetTorques(true);
 
-                droneBody.addForce(new RAPIER.Vector3(forceVec.x, forceVec.y, forceVec.z), true);
-                droneBody.addTorque(new RAPIER.Vector3(torqueVec.x, torqueVec.y, torqueVec.z), true);
+                droneBody.addForce(new RAPIER.Vector3(thrustForce.x, thrustForce.y, thrustForce.z), true);
+                droneBody.addTorque(new RAPIER.Vector3(thrustTorque.x, thrustTorque.y, thrustTorque.z), true);
+                droneBody.addForce(new RAPIER.Vector3(dragForce.x, dragForce.y, dragForce.z), true);
 
             }
 
@@ -377,13 +492,14 @@
                 camera.quaternion.slerp(camTarget.getWorldQuaternion(new THREE.Quaternion()), 0.3)
             }
 
-            // Animate Loop
-            const dt = 1 / 60;
-            function animate() {
-                requestAnimationFrame(animate);
+            // run engine
+            world.step()
+            let tNextStep = performance.now()
+            function stepPhysics() {
 
-                // physics step
-                world.step();
+                handleControls();
+
+                world.step()
 
                 // update drone mesh
                 const pos = droneBody.translation();
@@ -391,12 +507,22 @@
                 droneNode.position.set(pos.x, pos.y, pos.z);
                 droneNode.quaternion.set(rot.x, rot.y, rot.z, rot.w);
 
-                handleControls();
                 updateCamera();
+                engineStats.update()
+                const tNow = performance.now()
+                tNextStep = tNextStep + dt * 1000
+                tNextStep = Math.max(tNextStep, tNow - 100) // if we lag by more than 0.1s, we slow down
+                setTimeout(stepPhysics, Math.max(0, tNextStep - tNow))
+            }
+            setTimeout(stepPhysics, dt * 1000)
 
+            // run graphics
+            function animate() {
+                requestAnimationFrame(animate);
+                if (debug) { updateDebugRender() }
                 droneMixer.setTime(Math.random() * 1000)
-
                 renderer.render(scene, camera);
+                graphicsStats.update()
             }
 
             animate();

@@ -40,14 +40,26 @@ The assets used in this project are under Creative Commons licenses. They are **
 ## Todo
 
 * cooler name?
-* use common coordinate system for drone
+* beginner config
+* consider frame rate
+* right click orbit should also work when mouse is captured, fix that capture error message
 * reset position when turtleing
 * actually, anti turtleing
 * switch fpv/3rd person camera
 * make camera pivot around drone
 * raycast for camera position is terribly slow
 * stabilization and tilt limiting
-* make everything configurable
 * proper drone physics
+* CCD
 * proper graphics (AO, shadows, motion blur)
 * tasks (at least checkpoints)
+* crash sounds
+
+## Neglected Physics
+
+* Yaw, pitch and roll are assumed to be controlled by the flight controller and just respond directly to stick input with first-order lag (motor sounds are just heuristics).
+* Prop thrust does not drop with increasing airflow.
+* Motors do not saturate – attitude control still works fine at max thrust.
+* There is no ground effect.
+* There is no battery sag.
+* There is no prop wash 🙄

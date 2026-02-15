@@ -1,0 +1,69 @@
+{
+    version: 1.0,
+
+    aircraft: {
+        type: "quadcopter",
+        model: {
+            path: "assets/drones/racing_drone_lite_graphics_version.glb",
+            position: [ 0.0, 0.0, 0.0, ], // m
+            rollPitchYaw: [ -90.0, 0.0, 90.0, ], // deg
+            scale: [ 0.03, 0.03, 0.03, ],
+        },
+        wheelbase: 0.22, // m
+        mass: 0.4, // kg
+        propSize: 5.0, // inch
+        boundingBox: {
+            position: [ 0.0, 0.0, 0.0, ], // m
+            size: [ 0.3, 0.3, 0.08, ], // m
+        },
+        maxCombinedThrust: 30.0, // N
+        dragForceOverSpeed: [ 0.0, 0.0, 0.0, ], // N/(m/s)
+        dragForceOverSpeedSquared: [ 0.005, 0.005, 0.05, ], // N/(m/s)^2
+        maxRollRate: 250.0, // deg/s
+        rollTimeConstant: 0.05, // s
+        maxPitchRate: 250.0, // deg/s
+        pitchTimeConstant: 0.05, // s
+        maxYawRate: 200.0, // deg/s
+        yawTimeConstant: 0.05, // s
+        propSound: {
+            path: "assets/sound/prop_loop.mp3",
+            recordingFrequency: 900, // Hz
+            volume: 0.03,
+            numBlades: 3,
+            maxThrustRPM: 20000,
+            tiltDeltaRPM: 1500, // per motor when fast rolling/pitching/yawing
+            oscillateRPM: 300, // random oscillation amplitude
+        },
+    },
+
+    map: {
+        model: {
+            path: "assets/maps/playground_2b.glb",
+            position: [ 0.0, 0.0, 0.0, ], // m
+            rollPitchYaw: [ -90.0, 0.0, 90.0, ], // deg
+            scale: [ 1.0, 1.0, 1.0, ],
+        },
+        spawn: {
+            position: [ 0.0, 0.0, -1.0, ], // m
+            rollPitchYaw: [ 0.0, 0.0, 0.0, ], // deg
+        },
+        gravity: [ 0.0, 0.0, 9.81, ], // m/s^2
+        timeScale: 1.0,
+    },
+
+    background: {
+        // https://github.com/mrdoob/three.js/issues/33003
+        backgroundMap: {
+            path: "assets/envs/pretoria_gardens_1k.hdr",
+            rollPitchYaw: [ -90.0, 0.0, 0.0, ], // deg
+        },
+        environmentMap: {
+            path: "assets/envs/pretoria_gardens_1k.hdr",
+            rollPitchYaw: [ -90.0, 0.0, 0.0, ], // deg
+        },
+        music: {
+            path: "assets/music/fsm-team-escp-magenta-metropolis.mp3",
+            volume: 0.15,
+        },
+    },
+}

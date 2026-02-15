@@ -38,10 +38,7 @@ window.addEventListener('keydown', e => {
 });
 
 // drone control inputs
-export function controlInputs() {
-    const now = performance.now();
-    const dt = (now - lastTime) / 1000;
-    lastTime = now;
+export function controlInputs(dt) {
 
     const gamepad = navigator.getGamepads()[0];
     const applyDeadzone = (v, dz = 0.15) => Math.abs(v) < dz ? 0 : v;
@@ -85,27 +82,27 @@ export function controlInputs() {
     switch (mode) {
         case 1:
             throttleInput = rightStickY;
-            yawInput = -leftStickX;
+            yawInput = leftStickX;
             pitchInput = -leftStickY;
-            rollInput = -rightStickX;
+            rollInput = rightStickX;
             break;
         case 2:
             throttleInput = leftStickY;
-            yawInput = -leftStickX;
+            yawInput = leftStickX;
             pitchInput = -rightStickY;
-            rollInput = -rightStickX;
+            rollInput = rightStickX;
             break;
         case 3:
             throttleInput = leftStickY;
-            yawInput = -rightStickX;
+            yawInput = rightStickX;
             pitchInput = -rightStickY;
-            rollInput = -leftStickX;
+            rollInput = leftStickX;
             break;
         case 4:
             throttleInput = rightStickY;
-            yawInput = -rightStickX;
+            yawInput = rightStickX;
             pitchInput = -leftStickY;
-            rollInput = -leftStickX;
+            rollInput = leftStickX;
             break;
 
     }
