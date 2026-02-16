@@ -1,0 +1,14 @@
+{
+    extends: ["configs/default.json5"],
+    aircraft: {
+        maxCombinedThrust: 10.0, // N
+        dragForceOverSpeed: [ 0.0, 0.0, 0.0, ], // N/(m/s)
+        dragForceOverSpeedSquared: [ 0.01, 0.01, 0.1, ], // N/(m/s)^2
+        maxRollRate: 150.0, // deg/s
+        rollTimeConstant: 0.1, // s
+        maxPitchRate: 150.0, // deg/s
+        pitchTimeConstant: 0.1, // s
+        maxYawRate: 100.0, // deg/s
+        yawTimeConstant: 0.1, // s
+    },
+}

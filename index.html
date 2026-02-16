@@ -70,7 +70,6 @@
 
         const params = new URLSearchParams(window.location.search);
         const debug = params.get('debug') === 'true';
-        const configUrl = params.get('config') ?? 'configs/default.json5';
 
         window.THREE = THREE;
         const pi = Math.PI
@@ -88,8 +87,51 @@
 
         async function main() {
 
-            // load config
-            const config = JSON5.parse(await (await fetch(configUrl)).text());
+            // load layered config
+            async function loadConfig(path) {
+                return JSON5.parse(await (await fetch(path)).text())
+            }
+
+            function deepMerge(target, source) {
+                for (const key in source) {
+                    if (
+                        source[key] &&
+                        typeof source[key] === "object" &&
+                        !Array.isArray(source[key])
+                    ) {
+                        if (!target[key]) target[key] = {}
+                        deepMerge(target[key], source[key])
+                    } else {
+                        target[key] = source[key]
+                    }
+                }
+                return target
+            }
+
+            async function resolveConfig(entryPath) {
+                const entry = await loadConfig(entryPath)
+
+                let result = {}
+
+                if (entry.extends) {
+                    for (const path of entry.extends) {
+                        const parent = await resolveConfig(path)
+                        result = deepMerge(result, parent)
+                    }
+                }
+
+                return deepMerge(result, entry)
+            }
+
+            let config = {}
+            let userConfig = params.get('config') ?? ''
+
+            for (const path of ["configs/default.json5", ...userConfig.split(",")]) {
+                if (path === '') { continue }
+                const resolved = await resolveConfig(path)
+                config = deepMerge(config, resolved)
+            }
+
             console.assert(config.version == 1.0)
             console.assert(config.aircraft.type == "quadcopter")
 

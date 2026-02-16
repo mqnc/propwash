@@ -39,8 +39,8 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 ## Todo
 
+* split giant source file
 * cooler name?
-* beginner config
 * consider frame rate
 * right click orbit should also work when mouse is captured, fix that capture error message
 * reset position when turtleing
