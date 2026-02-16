@@ -5,7 +5,6 @@ let keyDown = {}
 let keyPressed = {}
 
 let mouse = { x: 0, y: 0 };
-let lastTime = performance.now();
 
 // config
 const TAU_KBD = 0.2;
@@ -45,7 +44,7 @@ window.addEventListener('keydown', e => {
 
 // drone control inputs
 let gpBefore = new Array(100).fill(false)
-export function controlInputs(dt) {
+export function readInputs(dt) {
 
     let reset = false
     if (keyPressed['r']) {
@@ -133,5 +132,5 @@ export function controlInputs(dt) {
 
     throttleInput = throttleInput * 0.5 + 0.5
 
-    return { throttleInput, yawInput, pitchInput, rollInput, reset };
+    return { throttleInput, rollInput, pitchInput, yawInput, reset };
 }
