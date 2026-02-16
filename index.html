@@ -403,6 +403,10 @@
             music.play();
 
             // Controls
+
+            let trace = [] // for backtracking when stuck
+            let nextCheckpoint = Math.ceil(0.5 / dt)
+
             const maxSingleMotorThrust = config.aircraft.maxCombinedThrust / 4
             const lever = config.aircraft.wheelbase * 0.5 * Math.SQRT1_2 // from center of mass to motor along x or y
             const maxPitchRollTorque = 4 * lever * maxSingleMotorThrust
@@ -411,8 +415,35 @@
             const hoverThrottle = g * config.aircraft.mass / config.aircraft.maxCombinedThrust
 
             function handleControls() {
+                nextCheckpoint--
+                if (nextCheckpoint <= 0) {
+                    nextCheckpoint = Math.ceil(0.5 / dt)
+                    trace.push([droneBody.translation(), droneBody.rotation()])
+                    if (trace.length > 60) { trace.shift() }
+                }
 
-                const { throttleInput, yawInput, pitchInput, rollInput } = controlInputs(dt)
+                const { throttleInput, yawInput, pitchInput, rollInput, reset } = controlInputs(dt)
+
+                if (reset) {
+                    droneBody.resetForces(true);
+                    droneBody.resetTorques(true);
+                    droneBody.setLinvel({ x: 0, y: 0, z: 0 });
+                    droneBody.setAngvel({ x: 0, y: 0, z: 0 });
+                    if (trace.length >= 2) {
+                        const [t, r] = trace[trace.length - 2]
+                        droneBody.setTranslation(t);
+                        droneBody.setRotation(r);
+                        trace.pop()
+                        trace.pop()
+                    }
+                    else {
+                        droneBody.setTranslation(
+                            { x: config.map.spawn.position[0], y: config.map.spawn.position[1], z: config.map.spawn.position[2] }
+                        );
+                        droneBody.setRotation(rpyDegToQuat(config.map.spawn.rollPitchYaw))
+                    }
+                    return
+                }
 
                 // make it so that the drone hovers when the stick is in the middle
                 let throttle;

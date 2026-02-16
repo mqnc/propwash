@@ -2,6 +2,7 @@
 // globals
 let kbdState = { x: 0, y: 0 };
 let keyDown = {}
+let keyPressed = {}
 
 let mouse = { x: 0, y: 0 };
 let lastTime = performance.now();
@@ -12,8 +13,13 @@ const MOUSE_SENS = 0.05;
 let mode = 2; // 1,2,3,4
 
 // input listeners
-window.addEventListener('keydown', e => keyDown[e.code] = true);
-window.addEventListener('keyup', e => keyDown[e.code] = false);
+window.addEventListener('keydown', (e) => {
+    keyDown[e.key.toLowerCase()] = true
+    if (!e.repeat) { keyPressed[e.key.toLowerCase()] = true }
+});
+window.addEventListener('keyup', (e) => {
+    keyDown[e.key.toLowerCase()] = false
+});
 
 let mouseCaptured = false;
 document.addEventListener("pointerlockchange", () => {
@@ -31,14 +37,21 @@ window.addEventListener('mousemove', e => {
 
 window.addEventListener('keydown', e => {
     if (e.repeat) return;
-    if (e.code === 'Digit1') mode = 1;
-    else if (e.code === 'Digit2') mode = 2;
-    else if (e.code === 'Digit3') mode = 3;
-    else if (e.code === 'Digit4') mode = 4;
+    if (e.key === '1') mode = 1;
+    else if (e.key === '2') mode = 2;
+    else if (e.key === '3') mode = 3;
+    else if (e.key === '4') mode = 4;
 });
 
 // drone control inputs
+let gpBefore = new Array(100).fill(false)
 export function controlInputs(dt) {
+
+    let reset = false
+    if (keyPressed['r']) {
+        reset = true
+        keyPressed['r'] = false
+    }
 
     const gamepad = navigator.getGamepads()[0];
     const applyDeadzone = (v, dz = 0.15) => Math.abs(v) < dz ? 0 : v;
@@ -51,16 +64,27 @@ export function controlInputs(dt) {
         leftStickY = applyDeadzone(-gamepad.axes[1]);
         rightStickX = applyDeadzone(gamepad.axes[2]);
         rightStickY = applyDeadzone(-gamepad.axes[3]);
+        if (gamepad.buttons[5].pressed && !gpBefore[5]) {
+            reset = true
+        }
+        gpBefore = gamepad.buttons.map(b => b.pressed)
     }
 
     // wasd = left stick
-    let targetX = (keyDown['KeyD'] || keyDown['ArrowRight'] ? 1 : 0) - (keyDown['KeyA'] || keyDown['ArrowLeft'] ? 1 : 0);
-    let targetY = (keyDown['KeyW'] || keyDown['ArrowUp'] ? 1 : 0) - (keyDown['KeyS'] || keyDown['ArrowDown'] ? 1 : 0);
+    let targetX = (keyDown['d'] || keyDown['arrowright'] ? 1 : 0) - (keyDown['a'] || keyDown['arrowleft'] ? 1 : 0);
+    let targetY = (keyDown['w'] || keyDown['arrowup'] ? 1 : 0) - (keyDown['s'] || keyDown['arrowdown'] ? 1 : 0);
 
     let q = dt / (TAU_KBD + dt);
 
     kbdState.x = (1 - q) * kbdState.x + q * targetX
     kbdState.y = (1 - q) * kbdState.y + q * targetY
+
+    if (reset) {
+        kbdState.x = 0;
+        kbdState.y = 0;
+        targetX = 0;
+        targetY = 0;
+    }
 
     leftStickX += kbdState.x;
     leftStickY += kbdState.y;
@@ -109,5 +133,5 @@ export function controlInputs(dt) {
 
     throttleInput = throttleInput * 0.5 + 0.5
 
-    return { throttleInput, yawInput, pitchInput, rollInput };
+    return { throttleInput, yawInput, pitchInput, rollInput, reset };
 }

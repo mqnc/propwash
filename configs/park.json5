@@ -1,0 +1,32 @@
+{
+    map: {
+        model: {
+            path: "assets/maps/amusement_park.glb",
+            position: [ 0.0, 0.0, 0.0, ], // m
+            rollPitchYaw: [ -90.0, 0.0, 90.0, ], // deg
+            scale: [ 1.0, 1.0, 1.0, ],
+        },
+        spawn: {
+            position: [ -3.0, 5.0, -5.0, ], // m
+            rollPitchYaw: [ 0.0, 0.0, 0.0, ], // deg
+        },
+        gravity: [ 0.0, 0.0, 9.81, ], // m/s^2
+        timeScale: 1.0,
+    },
+
+    background: {
+        // https://github.com/mrdoob/three.js/issues/33003
+        backgroundMap: {
+            path: "assets/envs/qwantani_night_1k.hdr",
+            rollPitchYaw: [ -90.0, 0.0, 0.0, ], // deg
+        },
+        environmentMap: {
+            path: "assets/envs/qwantani_night_1k.hdr",
+            rollPitchYaw: [ -90.0, 0.0, 0.0, ], // deg
+        },
+        music: {
+            path: "assets/music/fsm-team-escp-magenta-metropolis.mp3",
+            volume: 0.15,
+        },
+    },
+}

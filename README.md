@@ -5,16 +5,22 @@ Everything is still in prototype phase!
 
 * Use WASD as the left stick, mouse as the right stick (need to click into the game window to capture the mouse first)
 * Keys 1-4 switch between the different drone control modes with mode 2 as default
-* Right click and mouse wheel for camera orbit controls
-* If you got stuck, you need to refresh the page 😬
+* Right click (when mouse is not captured) and mouse wheel for camera orbit controls
+* Use R on keyboard or gamepad (button 5) to reset position to where it was a second ago
 
 ## Demos
 
-[Playground](https://mqnc.github.io/propwash/?map=playground_2b&env=pretoria_gardens_1k)
+[Playground, beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/playground.json5)
 
-[Bando](https://mqnc.github.io/propwash/?map=post-apocalyptic_city&env=qwantani_night_1k)
+[Playground, pro](https://mqnc.github.io/propwash/?config=configs/playground.json5)
 
-[Cyber Crazy Park](https://mqnc.github.io/propwash/?map=amusement_park&env=qwantani_night_1k)
+[Bando, beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/bando.json5)
+
+[Bando, pro](https://mqnc.github.io/propwash/?config=configs/bando.json5)
+
+[Cyber Crazy Park, beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/park.json5)
+
+[Cyber Crazy Park, pro](https://mqnc.github.io/propwash/?config=configs/park.json5)
 
 ## Attributions
 
@@ -42,9 +48,9 @@ The assets used in this project are under Creative Commons licenses. They are **
 * split giant source file
 * cooler name?
 * consider frame rate
+* bando and park slow now
 * right click orbit should also work when mouse is captured, fix that capture error message
-* reset position when turtleing
-* actually, anti turtleing
+* anti turtleing
 * switch fpv/3rd person camera
 * make camera pivot around drone
 * raycast for camera position is terribly slow
