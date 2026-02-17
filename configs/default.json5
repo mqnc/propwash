@@ -34,6 +34,20 @@
             tiltDeltaRPM: 1500, // per motor when fast rolling/pitching/yawing
             oscillateRPM: 300, // random oscillation amplitude
         },
+        camera: {
+            firstPerson: {
+                position: [ 0.2, 0.0, 0.0, ],
+                tilt: 40, // deg upwards
+                fieldOfView: 90, // deg diagonal
+            },
+            thirdPerson: {
+                distance: 1.0,
+                tilt: 40, // deg upwards
+                fieldOfView: 90, // deg diagonal
+                timeConstant: 0.01, // first order smoothing of pose
+            },
+            selected: "firstPerson",
+        },
     },
 
     map: {

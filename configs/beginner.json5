@@ -1,5 +1,5 @@
 {
-    extends: ["configs/default.json5"],
+    extends: [ "configs/default.json5", ],
     aircraft: {
         maxCombinedThrust: 10.0, // N
         dragForceOverSpeed: [ 0.0, 0.0, 0.0, ], // N/(m/s)
@@ -10,5 +10,17 @@
         pitchTimeConstant: 0.1, // s
         maxYawRate: 100.0, // deg/s
         yawTimeConstant: 0.1, // s
+        propSound:{
+            maxThrustRPM: 12000,
+        },
+        camera: {
+            firstPerson: {
+                tilt: 15, // deg upwards
+            },
+            thirdPerson: {
+                tilt: 15, // deg upwards
+            },
+            selected: "thirdPerson",
+        },
     },
 }

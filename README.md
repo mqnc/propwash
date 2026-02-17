@@ -7,6 +7,9 @@ Everything is still in prototype phase!
 * Keys 1-4 switch between the different drone control modes with mode 2 as default
 * Right click (when mouse is not captured) and mouse wheel for camera orbit controls
 * Use R on keyboard or gamepad (button 5) to reset position to where it was a second ago
+* Use space to switch between first person and third person camera
+
+If you clone the repo and host it locally, you can configurate your drone to your heart's content by creating a config file in `configs/` and then loading it with the URL parameter `http://localhost:8000?config=configs/myconfig.json5`.
 
 ## Demos
 
@@ -45,19 +48,15 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 ## Todo
 
-* split giant source file
-* cooler name?
-* consider frame rate
+* cooler name? Quadsch? Quadsimodo?
+* worker for physics
 * bando and park slow now
-* right click orbit should also work when mouse is captured, fix that capture error message
 * anti turtleing
-* switch fpv/3rd person camera
-* make camera pivot around drone
-* raycast for camera position is terribly slow
+* rebuild raycast for camera position
 * stabilization and tilt limiting
-* proper drone physics
+* properer drone physics?
 * CCD
-* proper graphics (AO, shadows, motion blur)
+* proper graphics (AO, shadows, motion blur, fish eye)
 * tasks (at least checkpoints)
 * crash sounds
 

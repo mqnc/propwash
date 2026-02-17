@@ -2,7 +2,7 @@
 // globals
 let kbdState = { x: 0, y: 0 };
 let keyDown = {}
-let keyPressed = {}
+export let keyPressed = {}
 
 let mouse = { x: 0, y: 0 };
 
