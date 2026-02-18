@@ -18,6 +18,7 @@ export function createCameras(config, scene, droneNode) {
     const fpvData = config.aircraft.camera.firstPerson;
     const fpvCamTiltJoint = new THREE.Object3D() // tilts camera up and down
     droneNode.add(fpvCamTiltJoint)
+    const fpvHalfDiagonal = Math.tan(fpvData.fieldOfView * deg / 2)
     const fpvCamera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
     fpvCamera.position.set(...fpvData.position)
     fpvCamera.quaternion.set(-0.5, -0.5, 0.5, 0.5)
@@ -32,6 +33,12 @@ export function createCameras(config, scene, droneNode) {
         tpvCamera.aspect = aspect;
         tpvCamera.fov = tpvVFOV;
         tpvCamera.updateProjectionMatrix();
+
+        const fpvHalfVertical = fpvHalfDiagonal / Math.sqrt(aspect * aspect + 1)
+        const fpvVFOV = 2 * Math.atan(fpvHalfVertical) / deg
+        fpvCamera.aspect = aspect;
+        fpvCamera.fov = fpvVFOV;
+        fpvCamera.updateProjectionMatrix();
     }
     resizeCameras()
     window.addEventListener('resize', () => { resizeCameras() });

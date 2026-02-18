@@ -71,6 +71,7 @@ async function main() {
 
     // drone
     const { droneBody, droneNode, droneSize, droneInertia, droneMixer } = createDrone(droneModel, config, scene, world)
+    window.droneNode = droneNode
 
     // cameras
     const { fpvCamera, fpvCamTiltJoint, tpvCamera, tpvData, tpvCamTarget, tpvCamTiltJoint } = createCameras(config, scene, droneNode)

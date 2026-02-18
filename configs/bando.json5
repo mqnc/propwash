@@ -4,10 +4,10 @@
             path: "assets/maps/post-apocalyptic_city.glb",
             position: [ 0.0, 0.0, 0.0, ], // m
             rollPitchYaw: [ -90.0, 0.0, 90.0, ], // deg
-            scale: [ 1.0, 1.0, 1.0, ],
+            scale: [ 2.0, 2.0, 2.0, ],
         },
         spawn: {
-            position: [ -10.0, 14.0, -4.5, ], // m
+            position: [ -20.0, 28.0, -9, ], // m
             rollPitchYaw: [ 0.0, 0.0, 0.0, ], // deg
         },
         gravity: [ 0.0, 0.0, 9.81, ], // m/s^2

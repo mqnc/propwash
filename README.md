@@ -37,9 +37,11 @@ The assets used in this project are under Creative Commons licenses. They are **
 | Maps | [playground 2](https://skfb.ly/pyZnG) | [Pasha](https://sketchfab.com/Pasha-) | CC BY 4.0 |
 || [Post-Apocalyptic City](https://skfb.ly/pD6BX) | [golukumar](https://sketchfab.com/mortalityrexotable) | CC BY 4.0 |
 || [Amusement park](https://skfb.ly/p7GFu) | [Megame Studio](https://sketchfab.com/megame1) | CC BY-NC-SA 4.0 |
+|| [Lovely Town](https://skfb.ly/ortrz) | [SebastianSosnowski](https://sketchfab.com/SebastianSosnowski) | CC BY 4.0 |
 ||||
 | HDRIs | [Pretoria Gardens](https://polyhaven.com/a/pretoria_gardens) | [Dimitrios Savva](https://polyhaven.com/all?a=Dimitrios%20Savva), [Jarod Guest](https://polyhaven.com/all?a=Jarod%20Guest) | CC0 |
 || [Qwantani Night](https://polyhaven.com/a/qwantani_night) | [Greg Zaal](https://polyhaven.com/all?a=Greg%20Zaal), [Jarod Guest](https://polyhaven.com/all?a=Jarod%20Guest) | CC0 |
+|| [Qwantani Noon \(Pure Sky\)](https://polyhaven.com/a/qwantani_noon_puresky) | [Greg Zaal](https://polyhaven.com/all?a=Greg%20Zaal), [Jarod Guest](https://polyhaven.com/all?a=Jarod%20Guest) | CC0 |
 ||||
 | Sounds | [prop sounds](https://www.youtube.com/watch?v=fnYv1KqfEuQ) | [Shane's DIY YouTube channel](https://www.youtube.com/@shanesdiy) | permission from the author |
 ||||
@@ -48,7 +50,8 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 ## Todo
 
-* cooler name? Quadsch? Quadsimodo?
+* beginner drone should not descend in the beginning
+* cooler name? Quadsch? Quadsimodo? AweQuad?
 * worker for physics
 * bando and park slow now
 * anti turtleing
@@ -59,6 +62,7 @@ The assets used in this project are under Creative Commons licenses. They are **
 * proper graphics (AO, shadows, motion blur, fish eye)
 * tasks (at least checkpoints)
 * crash sounds
+* phone control
 
 ## Neglected Physics
 
