@@ -1,6 +1,6 @@
 
 import { THREE, RAPIER, loadResources } from './resources.js'
-import { debug, initDebugRender, updateDebugRender } from './debug.js'
+import { initDebugRender, updateDebugRender } from './debug.js'
 import { setFromRPYdeg } from './utils.js'
 import { keyPressed } from './inputs.js'
 import { loadConfig } from './config.js'
@@ -21,15 +21,20 @@ async function main() {
     const config = await loadConfig()
     console.assert(config.version == 1.0)
     console.assert(config.aircraft.type == "quadcopter")
+    const debug = config.settings.debug
 
     // renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
     const canvas = renderer.domElement;
     document.body.appendChild(canvas);
-    window.addEventListener('resize', () => {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+
+    function resizeRenderer() {
+        renderer.setSize(window.innerWidth * config.settings.resolutionScale, window.innerHeight * config.settings.resolutionScale);
+        canvas.style.width = "100%"
+        canvas.style.height = "100%"
+    }
+    window.addEventListener('resize', resizeRenderer);
+    resizeRenderer()
 
     // resources
     const { rapier, droneModel, propWav, terrainModel, bgMap, envMap, musicWav } = await loadResources(config, canvas)

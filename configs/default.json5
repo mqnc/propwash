@@ -1,6 +1,11 @@
 {
     version: 1.0,
 
+    settings: {
+        debug: false,
+        resolutionScale: 1.0,
+    },
+
     aircraft: {
         type: "quadcopter",
         model: {

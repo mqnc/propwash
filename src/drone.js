@@ -1,7 +1,6 @@
 
 import { THREE, RAPIER } from './resources.js'
 import { rpyDegToQuat } from './utils.js'
-import { debug } from './debug.js'
 
 export function createDrone(droneModel, config, scene, world) {
 
@@ -44,9 +43,9 @@ export function createDrone(droneModel, config, scene, world) {
     droneObject.position.set(...config.aircraft.model.position)
     droneObject.quaternion.copy(rpyDegToQuat(config.aircraft.model.rollPitchYaw))
     droneNode.add(droneObject);
-    if (debug) { droneNode.add(new THREE.AxesHelper(0.1)); }
+    if (config.settings.debug) { droneNode.add(new THREE.AxesHelper(0.1)); }
 
-    if (debug) {
+    if (config.settings.debug) {
         const droneBox = new THREE.Mesh(
             new THREE.BoxGeometry(...droneSize),
             new THREE.MeshStandardMaterial({ color: 0xff0000, transparent: true, opacity: 0.5 })

@@ -1,7 +1,4 @@
 
-const params = new URLSearchParams(window.location.search);
-export const debug = params.get('debug') === 'true';
-
 export function initDebugRender() {
     const debugGeometry = new THREE.BufferGeometry();
     const debugMaterial = new THREE.LineBasicMaterial({ vertexColors: true });
