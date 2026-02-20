@@ -1,4 +1,6 @@
 
+import { clamp } from './utils.js'
+
 export function initSound(config, camera, droneNode, propWav, musicWav) {
 
     const listener = new THREE.AudioListener();
@@ -54,7 +56,7 @@ export function updateSound(
     ]
 
     for (let i = 0; i < 4; i++) {
-        frequencies[i] = Math.max(100, frequencies[i])
+        frequencies[i] = clamp(frequencies[i], 100, 10000)
         propSounds[i].setDetune(frequencyToCents(recordingFrequency, frequencies[i]))
     }
 }

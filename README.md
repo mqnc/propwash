@@ -52,12 +52,15 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 * beginner drone should not descend in the beginning
 * cooler name? Quadsch? Quadsimodo? AweQuad?
-* worker for physics
+* worker for physics?
 * bando and park slow now
 * anti turtleing
+* reset warp checkpoints by distance, not time
 * rebuild raycast for camera position
-* stabilization and tilt limiting
+* stabilization and tilt limiting combined oscillates
 * properer drone physics?
+* dead zone configurable
+* config panel
 * CCD
 * proper graphics (AO, shadows, motion blur, fish eye)
 * tasks (at least checkpoints)

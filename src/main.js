@@ -10,6 +10,7 @@ import { createDrone } from './drone.js'
 import { initSound } from './sound.js'
 import { initControls, controlDrone } from './control.js'
 import { createCameras, updateTpvCamera } from './camera.js'
+import { clamp } from './utils.js'
 
 const dt = 1.0 / 100.0; // physics timestep
 
@@ -114,7 +115,7 @@ async function main() {
         const tNow = performance.now()
         tNextStep = tNextStep + dt * 1000
         tNextStep = Math.max(tNextStep, tNow - 100) // if we lag by more than 0.1s, we slow down
-        setTimeout(stepPhysics, Math.max(0, tNextStep - tNow))
+        setTimeout(stepPhysics, clamp(tNextStep - tNow, 0, Infinity))
     }
     setTimeout(stepPhysics, dt * 1000)
 

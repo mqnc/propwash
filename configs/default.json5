@@ -30,6 +30,13 @@
         pitchTimeConstant: 0.05, // s
         maxYawRate: 200.0, // deg/s
         yawTimeConstant: 0.05, // s
+
+        // return turn rate proportional to tilt angle
+        // stabilization: 3.0, // (deg/s)/deg
+
+        // commanded turn rate is reduced at 90% of angleLimit and cut off at 110%
+        // angleLimit: 60.0, // deg
+
         propSound: {
             path: "assets/sound/prop_loop.mp3",
             recordingFrequency: 900, // Hz

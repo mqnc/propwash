@@ -1,4 +1,6 @@
 
+import { clamp } from './utils.js'
+
 // globals
 let kbdState = { x: 0, y: 0 };
 let keyDown = {}
@@ -29,8 +31,8 @@ window.addEventListener('mousemove', e => {
     if (mouseCaptured) {
         mouse.x += e.movementX * MOUSE_SENS;
         mouse.y += e.movementY * MOUSE_SENS;
-        mouse.x = Math.max(-1, Math.min(1, mouse.x));
-        mouse.y = Math.max(-1, Math.min(1, mouse.y));
+        mouse.x = clamp(mouse.x, -1, -1);
+        mouse.y = clamp(mouse.y, -1, -1);
     }
 });
 
@@ -94,11 +96,10 @@ export function readInputs(dt) {
     mouse.x = 0;
     mouse.y = 0;
 
-    const clamp = v => Math.max(-1, Math.min(v, 1))
-    leftStickX = clamp(leftStickX)
-    leftStickY = clamp(leftStickY)
-    rightStickX = clamp(rightStickX)
-    rightStickY = clamp(rightStickY)
+    leftStickX = clamp(leftStickX, -1, 1)
+    leftStickY = clamp(leftStickY, -1, 1)
+    rightStickX = clamp(rightStickX, -1, 1)
+    rightStickY = clamp(rightStickY, -1, 1)
 
     let throttleInput, yawInput, pitchInput, rollInput;
 

@@ -1,18 +1,30 @@
 {
-    extends: [ "configs/default.json5", ],
+    // extends: [ "configs/default.json5", ], // include all values from that config (and its extends)
+
     aircraft: {
+
         maxCombinedThrust: 10.0, // N
+
         dragForceOverSpeed: [ 0.0, 0.0, 0.0, ], // N/(m/s)
         dragForceOverSpeedSquared: [ 0.01, 0.01, 0.1, ], // N/(m/s)^2
+        
         maxRollRate: 150.0, // deg/s
         rollTimeConstant: 0.1, // s
         maxPitchRate: 150.0, // deg/s
         pitchTimeConstant: 0.1, // s
         maxYawRate: 100.0, // deg/s
         yawTimeConstant: 0.1, // s
+        
+        // return turn rate proportionally to tilt angle
+        stabilization: 3.0, // (deg/s)/deg
+
+        // commanded turn rate is reduced at 90% of angleLimit and cut off at 110%
+        angleLimit: 60.0, // deg
+
         propSound:{
             maxThrustRPM: 12000,
         },
+        
         camera: {
             firstPerson: {
                 tilt: 15, // deg upwards

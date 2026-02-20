@@ -3,9 +3,10 @@ import { THREE, RAPIER } from './resources.js'
 import { rpyDegToQuat } from './utils.js'
 import { readInputs } from './inputs.js'
 import { updateSound } from './sound.js'
-import { inch, deg } from './utils.js'
+import { inch, deg, clamp, lerp } from './utils.js'
 
 export function initControls(config, dt) {
+
     const g = Math.sqrt(
         Math.pow(config.map.gravity[0], 2)
         + Math.pow(config.map.gravity[1], 2)
@@ -89,11 +90,41 @@ export function controlDrone(controlData, droneBody, droneInertia, soundData, co
     const localLinearVelocity = new THREE.Vector3(linvel.x, linvel.y, linvel.z).applyQuaternion(qInv);
     const localAngularVelocity = new THREE.Vector3(angvel.x, angvel.y, angvel.z).applyQuaternion(qInv);
 
-    const localTargetAngularVelocity = new THREE.Vector3(
+    let localTargetAngularVelocity = new THREE.Vector3(
         rollInput * config.aircraft.maxRollRate * deg,
         pitchInput * config.aircraft.maxPitchRate * deg,
         yawInput * config.aircraft.maxYawRate * deg,
     );
+
+    if (config.aircraft.angleLimit != null || config.aircraft.stabilization != null) {
+        const gInDroneFrame = new THREE.Vector3(...config.map.gravity).normalize().applyQuaternion(qInv)
+        const polarAngle = Math.acos(clamp(gInDroneFrame.z, -1, 1))
+
+        let restoreAxis = new THREE.Vector3(gInDroneFrame.y, -gInDroneFrame.x, 0).normalize()
+        let restoreAmount = 0
+
+        if (config.aircraft.angleLimit != null) {
+            let factor = 0;
+            if (
+                polarAngle > config.aircraft.angleLimit * 0.9 * deg
+                && polarAngle < config.aircraft.angleLimit * 1.1 * deg
+            ) {
+                factor = lerp(polarAngle, config.aircraft.angleLimit * 0.9 * deg, config.aircraft.angleLimit * deg * 1.1, 0, 1)
+            }
+            else if (polarAngle > config.aircraft.angleLimit * 1.1 * deg) {
+                factor = 1
+            }
+            restoreAmount += clamp(localTargetAngularVelocity.dot(restoreAxis) * factor, 0, Infinity)
+        }
+
+        if (config.aircraft.stabilization != null) {
+            restoreAmount += polarAngle * config.aircraft.stabilization
+        }
+
+        localTargetAngularVelocity.addScaledVector(restoreAxis, -restoreAmount)
+    }
+
+
 
     const localForce = new RAPIER.Vector3(0, 0, -throttle * config.aircraft.maxCombinedThrust);
     const localTorque = new RAPIER.Vector3(
