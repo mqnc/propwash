@@ -31,8 +31,8 @@ window.addEventListener('mousemove', e => {
     if (mouseCaptured) {
         mouse.x += e.movementX * MOUSE_SENS;
         mouse.y += e.movementY * MOUSE_SENS;
-        mouse.x = clamp(mouse.x, -1, -1);
-        mouse.y = clamp(mouse.y, -1, -1);
+        mouse.x = clamp(mouse.x, -1, 1);
+        mouse.y = clamp(mouse.y, -1, 1);
     }
 });
 

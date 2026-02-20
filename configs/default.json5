@@ -32,10 +32,10 @@
         yawTimeConstant: 0.05, // s
 
         // return turn rate proportional to tilt angle
-        // stabilization: 3.0, // (deg/s)/deg
+        stabilization: 0.0, // (deg/s)/deg, 0 for no stabilization
 
         // commanded turn rate is reduced at 90% of angleLimit and cut off at 110%
-        // angleLimit: 60.0, // deg
+        angleLimit: 180.0, // deg, >=180 for no limit
 
         propSound: {
             path: "assets/sound/prop_loop.mp3",

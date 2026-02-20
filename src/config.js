@@ -43,12 +43,11 @@ async function resolveConfig(entryPath) {
     return deepMerge(result, entry)
 }
 
-export let config = {}
-
 export async function loadConfig() {
 
     const params = new URLSearchParams(window.location.search)
 
+    let config = {}
     let userConfig = params.get('config') ?? ''
 
     for (const path of [defaultConfig, ...userConfig.split(",")]) {

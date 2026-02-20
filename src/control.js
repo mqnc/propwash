@@ -96,14 +96,14 @@ export function controlDrone(controlData, droneBody, droneInertia, soundData, co
         yawInput * config.aircraft.maxYawRate * deg,
     );
 
-    if (config.aircraft.angleLimit != null || config.aircraft.stabilization != null) {
+    if (config.aircraft.angleLimit < 180 || config.aircraft.stabilization > 0) {
         const gInDroneFrame = new THREE.Vector3(...config.map.gravity).normalize().applyQuaternion(qInv)
         const polarAngle = Math.acos(clamp(gInDroneFrame.z, -1, 1))
 
         let restoreAxis = new THREE.Vector3(gInDroneFrame.y, -gInDroneFrame.x, 0).normalize()
         let restoreAmount = 0
 
-        if (config.aircraft.angleLimit != null) {
+        if (config.aircraft.angleLimit < 180) {
             let factor = 0;
             if (
                 polarAngle > config.aircraft.angleLimit * 0.9 * deg
@@ -117,7 +117,7 @@ export function controlDrone(controlData, droneBody, droneInertia, soundData, co
             restoreAmount += clamp(localTargetAngularVelocity.dot(restoreAxis) * factor, 0, Infinity)
         }
 
-        if (config.aircraft.stabilization != null) {
+        if (config.aircraft.stabilization > 0) {
             restoreAmount += polarAngle * config.aircraft.stabilization
         }
 

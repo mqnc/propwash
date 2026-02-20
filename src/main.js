@@ -11,6 +11,7 @@ import { initSound } from './sound.js'
 import { initControls, controlDrone } from './control.js'
 import { createCameras, updateTpvCamera } from './camera.js'
 import { clamp } from './utils.js'
+import { createGui } from './gui.js'
 
 const dt = 1.0 / 100.0; // physics timestep
 
@@ -23,6 +24,9 @@ async function main() {
     console.assert(config.version == 1.0)
     console.assert(config.aircraft.type == "quadcopter")
     const debug = config.settings.debug
+
+    // gui
+    createGui(config)
 
     // renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
