@@ -12,6 +12,7 @@ import { initControls, controlDrone } from './control.js'
 import { createCameras, updateTpvCamera } from './camera.js'
 import { clamp } from './utils.js'
 import { createGui } from './gui.js'
+import { createRenderPipeline } from './renderer.js'
 
 const dt = 1.0 / 100.0; // physics timestep
 
@@ -26,20 +27,18 @@ async function main() {
     const debug = config.settings.debug
 
     // gui
-    createGui(config)
+    //createGui(config)
+
+    // scene
+    const scene = new THREE.Scene();
+    window.scene = scene
+    scene.background = new THREE.Color(0x87ceeb);
+    if (debug) { scene.add(new THREE.AxesHelper(1)); }
+    const gVector = new THREE.Vector3(...config.map.gravity)
+    THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
 
     // renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    const canvas = renderer.domElement;
-    document.body.appendChild(canvas);
-
-    function resizeRenderer() {
-        renderer.setSize(window.innerWidth * config.settings.resolutionScale, window.innerHeight * config.settings.resolutionScale);
-        canvas.style.width = "100%"
-        canvas.style.height = "100%"
-    }
-    window.addEventListener('resize', resizeRenderer);
-    resizeRenderer()
+    const { renderPass, renderer, composer, canvas, updateFisheye } = createRenderPipeline(config, scene)
 
     // resources
     const { rapier, droneModel, propWav, terrainModel, bgMap, envMap, musicWav } = await loadResources(config, canvas)
@@ -58,14 +57,6 @@ async function main() {
 
     // stats
     const { engineStats, graphicsStats } = createStats()
-
-    // scene
-    const scene = new THREE.Scene();
-    window.scene = scene
-    scene.background = new THREE.Color(0x87ceeb);
-    if (debug) { scene.add(new THREE.AxesHelper(1)); }
-    const gVector = new THREE.Vector3(...config.map.gravity)
-    THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
 
     // lighting
     envMap.mapping = THREE.EquirectangularReflectionMapping;
@@ -133,10 +124,14 @@ async function main() {
             keyPressed[' '] = false
             selectedCamera = selectedCamera === tpvCamera ? fpvCamera : tpvCamera
         }
-        renderer.render(scene, selectedCamera);
+        //renderer.render(scene, selectedCamera);
+        renderPass.camera = selectedCamera
+        updateFisheye(selectedCamera)
+        composer.render()
         graphicsStats.update()
     }
 
     animate();
+
 }
 main()

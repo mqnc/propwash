@@ -1,0 +1,6 @@
+{
+    settings: {
+        composerResolutionScale: 0.7, // virtual image before fisheye effect
+        rendererResolutionScale: 0.5, // final rendering
+    },
+}

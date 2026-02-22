@@ -3,7 +3,9 @@
 
     settings: {
         debug: false,
-        resolutionScale: 1.0,
+        composerResolutionScale: 2.0, // virtual image before fisheye effect
+        rendererResolutionScale: 1.0, // final rendering
+        antiAlias: true,
     },
 
     aircraft: {
@@ -50,7 +52,7 @@
             firstPerson: {
                 position: [ 0.2, 0.0, 0.0, ],
                 tilt: 40, // deg upwards
-                fieldOfView: 90, // deg diagonal
+                fieldOfView: 150, // deg diagonal
             },
             thirdPerson: {
                 distance: 1.0,

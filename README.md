@@ -46,6 +46,11 @@ The assets used in this project are under Creative Commons licenses. They are **
 | Sounds | [prop sounds](https://www.youtube.com/watch?v=fnYv1KqfEuQ) | [Shane's DIY YouTube channel](https://www.youtube.com/@shanesdiy) | permission from the author |
 ||||
 | Music | [Magenta Metropolis](https://www.free-stock-music.com/fsm-team-escp-magenta-metropolis.html) | [by \| e s c p \|](https://www.escp.space) | CC BY 4.0 |
+||||
+| Code | [three.js](https://github.com/mrdoob/three.js) | [mrdoob](https://github.com/mrdoob) | MIT |
+|| [Rapier](https://rapier.rs/) | [dimforge](https://dimforge.com/) | Apache-2.0 |
+|| [fisheye](https://www.decarpentier.nl/lens-distortion) | [Giliam de Carpentier](https://www.decarpentier.nl/) | BSD |
+
 
 
 ## Todo
