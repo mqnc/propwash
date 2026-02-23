@@ -38,7 +38,7 @@ async function main() {
     THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
 
     // renderer
-    const { renderPass, renderer, composer, canvas, updateFisheye } = createRenderPipeline(config, scene)
+    const { renderPass, renderer, composer, canvas, updateUniforms } = createRenderPipeline(config, scene)
 
     // resources
     const { rapier, droneModel, propWav, terrainModel, bgMap, envMap, musicWav } = await loadResources(config, canvas)
@@ -126,7 +126,7 @@ async function main() {
         }
         //renderer.render(scene, selectedCamera);
         renderPass.camera = selectedCamera
-        updateFisheye(selectedCamera)
+        updateUniforms(selectedCamera)
         composer.render()
         graphicsStats.update()
     }

@@ -67,7 +67,8 @@ The assets used in this project are under Creative Commons licenses. They are **
 * dead zone configurable
 * config panel
 * CCD
-* proper graphics (AO, shadows, motion blur, fish eye)
+* exclude drone from motion blur
+* shadows
 * tasks (at least checkpoints)
 * crash sounds
 * phone control

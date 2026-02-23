@@ -9,6 +9,7 @@ import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 // import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 
 import { deg } from './utils.js'
+import { THREE } from './resources.js'
 
 export function createRenderPipeline(config, scene) {
     const renderer = new THREE.WebGLRenderer();
@@ -18,24 +19,40 @@ export function createRenderPipeline(config, scene) {
     document.body.appendChild(canvas);
 
     const composer = new EffectComposer(renderer)
+    for (const target of [composer.renderTarget1, composer.renderTarget2]) {
+        target.depthTexture = new THREE.DepthTexture();
+        target.depthTexture.format = THREE.DepthFormat;
+        target.depthTexture.type = THREE.FloatType;
+        target.depthTexture.minFilter = THREE.NearestFilter;
+        target.depthTexture.magFilter = THREE.NearestFilter;
+    }
 
     const renderPass = new RenderPass(scene, null)
     composer.addPass(renderPass)
+
+    const motionBlur = createMotionBlurPass()
+    composer.addPass(motionBlur.pass)
+
     //const ssaoPass = new SSAOPass(scene, new THREE.PerspectiveCamera());
     //ssaoPass.output = SSAOPass.OUTPUT.SSAO
     //composer.addPass(ssaoPass);
-    if (config.settings.antiAlias) {
-        composer.addPass(new FXAAPass())
-    }
-    const fisheyePass = createFisheyePass()
-    composer.addPass(fisheyePass)
+
+    // if (config.settings.antiAlias) {
+    //     composer.addPass(new FXAAPass())
+    // }
+    // const motionBlurPass = new MotionBlurPass(renderer, scene)
+    // composer.addPass(motionBlurPass)
+    const fisheye = createFisheyePass()
+    composer.addPass(fisheye.pass)
+
     //const afterimagePass = new AfterimagePass(0.5);
     //composer.addPass(afterimagePass);
+
     composer.addPass(new OutputPass())
 
-    function updateFisheye(camera) {
-        fisheyePass.uniforms.height.value = Math.tan(camera.fov / 2 * deg)
-        fisheyePass.uniforms.aspectRatio.value = camera.aspect
+    function updateUniforms(camera) {
+        motionBlur.updateUniforms(camera, composer.readBuffer.depthTexture)
+        fisheye.updateUniforms(camera)
     }
 
     function onResize() {
@@ -43,6 +60,10 @@ export function createRenderPipeline(config, scene) {
             window.innerWidth * config.settings.composerResolutionScale,
             window.innerHeight * config.settings.composerResolutionScale
         )
+        // motionBlurPass.setSize(
+        //     window.innerWidth * config.settings.composerResolutionScale,
+        //     window.innerHeight * config.settings.composerResolutionScale
+        // )
         renderer.setSize(
             window.innerWidth * config.settings.rendererResolutionScale,
             window.innerHeight * config.settings.rendererResolutionScale,
@@ -52,14 +73,14 @@ export function createRenderPipeline(config, scene) {
     window.addEventListener('resize', onResize);
     onResize()
 
-    return { renderPass, renderer, composer, canvas, updateFisheye }
+    return { renderPass, renderer, composer, canvas, updateUniforms }
 }
 
 function createFisheyePass() {
 
     // https://www.decarpentier.nl/lens-distortion
 
-    return new ShaderPass({
+    const pass = new ShaderPass({
         uniforms: {
             "tDiffuse": { type: "t", value: null },
             "strength": { type: "f", value: 1 },
@@ -104,4 +125,95 @@ function createFisheyePass() {
             }
         `
     });
+
+    const updateUniforms = (camera) => {
+        pass.uniforms.height.value = Math.tan(camera.fov / 2 * deg)
+        pass.uniforms.aspectRatio.value = camera.aspect
+    }
+
+    return { pass, updateUniforms }
+}
+
+function createMotionBlurPass() {
+
+    // created by chatGPT, looks alright in game, not sure if it's correct
+
+    const pass = new ShaderPass({
+        uniforms: {
+            tDiffuse: { value: null },
+            tDepth: { value: null },
+            invProjection: { value: new THREE.Matrix4() },
+            invView: { value: new THREE.Matrix4() },
+            prevViewProj: { value: new THREE.Matrix4() },
+            currViewProj: { value: new THREE.Matrix4() },
+            blurStrength: { value: 1.0 }
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position.xy, 0.0, 1.0);
+            }
+        `,
+        fragmentShader: `
+            varying vec2 vUv;
+
+            uniform sampler2D tDiffuse;
+            uniform sampler2D tDepth;
+
+            uniform float near;
+            uniform float far;
+            uniform mat4 invProjection;
+            uniform mat4 invView;
+            uniform mat4 prevViewProj;
+            uniform mat4 currViewProj;
+            uniform float blurStrength;
+
+            vec3 getWorldPos(vec2 uv, float depth) {
+                float z = depth * 2.0 - 1.0;
+                vec4 clip = vec4(uv * 2.0 - 1.0, z, 1.0);
+                vec4 view = invProjection * clip;
+                view /= view.w;
+                vec4 world = invView * view;
+                return world.xyz;
+            }
+
+            void main() {
+                float depth = texture2D(tDepth, vUv).r;
+                vec3 worldPos = getWorldPos(vUv, depth);
+
+                vec4 currClip = currViewProj * vec4(worldPos, 1.0);
+                currClip /= currClip.w;
+
+                vec4 prevClip = prevViewProj * vec4(worldPos, 1.0);
+                prevClip /= prevClip.w;
+
+                vec2 velocity = (currClip.xy - prevClip.xy) * 0.5 * blurStrength;
+
+                vec4 color = vec4(0.0);
+                const int samples = 8;
+
+                for (int i = 0; i < samples; i++) {
+                    float t = float(i) / float(samples - 1);
+                    vec2 offset = vUv - velocity * t;
+                    color += texture2D(tDiffuse, offset);
+                }
+
+                gl_FragColor = color / float(samples);
+            }
+        `
+    });
+
+    const updateUniforms = (camera, depthTexture) => {
+        pass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse)
+        pass.uniforms.invView.value.copy(camera.matrixWorld)
+        pass.uniforms.prevViewProj.value.copy(pass.uniforms.currViewProj.value)
+        pass.uniforms.currViewProj.value.multiplyMatrices(
+            camera.projectionMatrix,
+            camera.matrixWorldInverse
+        );
+        pass.uniforms.tDepth.value = depthTexture
+    }
+
+    return { pass, updateUniforms }
 }
