@@ -11,12 +11,31 @@ import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 import { deg } from './utils.js'
 import { THREE } from './resources.js'
 
+export const DRONE_LAYER = 1; // for creating mask stencil for post processing
+
 export function createRenderPipeline(config, scene) {
     const renderer = new THREE.WebGLRenderer();
     const canvas = renderer.domElement;
     canvas.style.width = "100%"
     canvas.style.height = "100%"
     document.body.appendChild(canvas);
+
+
+    const maskTarget = new THREE.WebGLRenderTarget(
+        window.innerWidth,
+        window.innerHeight,
+        {
+            format: THREE.RedFormat,
+            type: THREE.UnsignedByteType,
+            depthBuffer: true,
+            stencilBuffer: false
+        }
+    );
+
+    const maskMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide
+    });
 
     const composer = new EffectComposer(renderer)
     for (const target of [composer.renderTarget1, composer.renderTarget2]) {
@@ -50,11 +69,6 @@ export function createRenderPipeline(config, scene) {
 
     composer.addPass(new OutputPass())
 
-    function updateUniforms(camera) {
-        motionBlur.updateUniforms(camera, composer.readBuffer.depthTexture)
-        fisheye.updateUniforms(camera)
-    }
-
     function onResize() {
         composer.setSize(
             window.innerWidth * config.settings.composerResolutionScale,
@@ -69,11 +83,44 @@ export function createRenderPipeline(config, scene) {
             window.innerHeight * config.settings.rendererResolutionScale,
             false
         );
+
+        maskTarget.setSize(
+            window.innerWidth,
+            window.innerHeight,
+        );
     }
     window.addEventListener('resize', onResize);
     onResize()
 
-    return { renderPass, renderer, composer, canvas, updateUniforms }
+    const render = (selectedCamera) => {
+        renderPass.camera = selectedCamera
+
+        // render mask for motion blur
+        renderer.setRenderTarget(maskTarget);
+        const colorBefore = renderer.getClearColor(new THREE.Color());
+        const backgroundBefore = scene.background
+        scene.background = new THREE.Color(0x000000);
+        renderer.setClearColor(0x000000, 1);
+        renderer.clear();
+        scene.overrideMaterial = maskMaterial;
+        selectedCamera.layers.set(DRONE_LAYER);
+        renderer.render(scene, selectedCamera);
+        scene.overrideMaterial = null;
+        selectedCamera.layers.set(0);
+        renderer.setRenderTarget(null);
+        renderer.setClearColor(colorBefore, 1);
+        scene.background = backgroundBefore;
+
+        motionBlur.updateUniforms(
+            selectedCamera,
+            composer.readBuffer.depthTexture,
+            maskTarget.texture
+        )
+        fisheye.updateUniforms(selectedCamera)
+        composer.render()
+    }
+
+    return { render, canvas }
 }
 
 function createFisheyePass() {
@@ -142,6 +189,7 @@ function createMotionBlurPass() {
         uniforms: {
             tDiffuse: { value: null },
             tDepth: { value: null },
+            tMask: { value: null },
             invProjection: { value: new THREE.Matrix4() },
             invView: { value: new THREE.Matrix4() },
             prevViewProj: { value: new THREE.Matrix4() },
@@ -160,6 +208,7 @@ function createMotionBlurPass() {
 
             uniform sampler2D tDiffuse;
             uniform sampler2D tDepth;
+            uniform sampler2D tMask;
 
             uniform float near;
             uniform float far;
@@ -179,6 +228,13 @@ function createMotionBlurPass() {
             }
 
             void main() {
+
+                float mask = texture2D(tMask, vUv).r;
+                if (mask > 0.5){
+                    gl_FragColor = texture2D(tDiffuse, vUv);
+                    return;
+                }
+
                 float depth = texture2D(tDepth, vUv).r;
                 vec3 worldPos = getWorldPos(vUv, depth);
 
@@ -190,21 +246,25 @@ function createMotionBlurPass() {
 
                 vec2 velocity = (currClip.xy - prevClip.xy) * 0.5 * blurStrength;
 
-                vec4 color = vec4(0.0);
-                const int samples = 8;
+                vec4 color = texture2D(tDiffuse, vUv);
+                const int maxSamples = 12;
+                int actualSamples = 1;
 
-                for (int i = 0; i < samples; i++) {
-                    float t = float(i) / float(samples - 1);
+                for (int i = 0; i < maxSamples; i++) {
+                    float t = float(i) / float(maxSamples - 1);
                     vec2 offset = vUv - velocity * t;
-                    color += texture2D(tDiffuse, offset);
+                    if (texture2D(tMask, offset).r < 0.5){ // don't sample drone
+                        color += texture2D(tDiffuse, offset);
+                        actualSamples += 1;
+                    }
                 }
 
-                gl_FragColor = color / float(samples);
+                gl_FragColor = color / float(actualSamples);
             }
         `
     });
 
-    const updateUniforms = (camera, depthTexture) => {
+    const updateUniforms = (camera, depthTexture, maskTexture) => {
         pass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse)
         pass.uniforms.invView.value.copy(camera.matrixWorld)
         pass.uniforms.prevViewProj.value.copy(pass.uniforms.currViewProj.value)
@@ -213,6 +273,7 @@ function createMotionBlurPass() {
             camera.matrixWorldInverse
         );
         pass.uniforms.tDepth.value = depthTexture
+        pass.uniforms.tMask.value = maskTexture
     }
 
     return { pass, updateUniforms }

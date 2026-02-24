@@ -36,9 +36,10 @@ async function main() {
     if (debug) { scene.add(new THREE.AxesHelper(1)); }
     const gVector = new THREE.Vector3(...config.map.gravity)
     THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
+    const droneStencilScene = new THREE.Scene()
 
     // renderer
-    const { renderPass, renderer, composer, canvas, updateUniforms } = createRenderPipeline(config, scene)
+    const { render, canvas } = createRenderPipeline(config, scene)
 
     // resources
     const { rapier, droneModel, propWav, terrainModel, bgMap, envMap, musicWav } = await loadResources(config, canvas)
@@ -124,10 +125,8 @@ async function main() {
             keyPressed[' '] = false
             selectedCamera = selectedCamera === tpvCamera ? fpvCamera : tpvCamera
         }
-        //renderer.render(scene, selectedCamera);
-        renderPass.camera = selectedCamera
-        updateUniforms(selectedCamera)
-        composer.render()
+
+        render(selectedCamera)
         graphicsStats.update()
     }
 

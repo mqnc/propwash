@@ -2,6 +2,8 @@
 import { THREE, RAPIER } from './resources.js'
 import { rpyDegToQuat } from './utils.js'
 
+import { DRONE_LAYER } from './renderer.js'
+
 export function createDrone(droneModel, config, scene, world) {
 
     const [w, h, d] = config.aircraft.boundingBox.size;
@@ -43,6 +45,7 @@ export function createDrone(droneModel, config, scene, world) {
     droneObject.position.set(...config.aircraft.model.position)
     droneObject.quaternion.copy(rpyDegToQuat(config.aircraft.model.rollPitchYaw))
     droneNode.add(droneObject);
+    droneObject.traverse(o => o.layers.enable(DRONE_LAYER));
     if (config.settings.debug) { droneNode.add(new THREE.AxesHelper(0.1)); }
 
     if (config.settings.debug) {
