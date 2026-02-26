@@ -1,53 +1,44 @@
 
-import { THREE } from './resources.js'
+import { THREE } from './three.js'
 import { deg } from './utils.js'
+import { dt } from './config.js'
+import { rpyDegToQuat } from './utils.js'
 
-export function createCameras(config, scene, droneNode) {
-    const tpvData = config.aircraft.camera.thirdPerson;
-    const tpvCamTarget = new THREE.Object3D() // follows the drone with first order smoothing
-    const tpvCamTiltJoint = new THREE.Object3D() // tilts camera up and down
-    scene.add(tpvCamTarget)
-    tpvCamTarget.add(tpvCamTiltJoint)
-    const tpvHalfDiagonal = Math.tan(tpvData.fieldOfView * deg / 2)
-    const tpvCamera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
-    tpvCamera.position.set(-tpvData.distance, 0, 0)
-    tpvCamera.quaternion.set(-0.5, -0.5, 0.5, 0.5)
-    tpvCamTiltJoint.add(tpvCamera)
-    tpvCamTiltJoint.rotation.y = tpvData.tilt * deg
+export function createCameraAnchor(camConfig) {
+    // physical position, computed in the worker
+    const camTarget = new THREE.Object3D() // follows the drone with first order smoothing
+    const camAnchor = new THREE.Object3D() // actual camera pose
+    camTarget.add(camAnchor)
+    camAnchor.position.set(...camConfig.position)
+    camAnchor.quaternion.copy(rpyDegToQuat(camConfig.rollPitchYaw))
 
-    const fpvData = config.aircraft.camera.firstPerson;
-    const fpvCamTiltJoint = new THREE.Object3D() // tilts camera up and down
-    droneNode.add(fpvCamTiltJoint)
-    const fpvHalfDiagonal = Math.tan(fpvData.fieldOfView * deg / 2)
-    const fpvCamera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
-    fpvCamera.position.set(...fpvData.position)
-    fpvCamera.quaternion.set(-0.5, -0.5, 0.5, 0.5)
-    fpvCamTiltJoint.add(fpvCamera)
-    fpvCamTiltJoint.rotation.y = fpvData.tilt * deg
-
-    function resizeCameras() {
-        const aspect = window.innerWidth / window.innerHeight
-
-        const tpvHalfVertical = tpvHalfDiagonal / Math.sqrt(aspect * aspect + 1)
-        const tpvVFOV = 2 * Math.atan(tpvHalfVertical) / deg
-        tpvCamera.aspect = aspect;
-        tpvCamera.fov = tpvVFOV;
-        tpvCamera.updateProjectionMatrix();
-
-        const fpvHalfVertical = fpvHalfDiagonal / Math.sqrt(aspect * aspect + 1)
-        const fpvVFOV = 2 * Math.atan(fpvHalfVertical) / deg
-        fpvCamera.aspect = aspect;
-        fpvCamera.fov = fpvVFOV;
-        fpvCamera.updateProjectionMatrix();
+    function update(position, quaternion) {
+        const alpha = camConfig.timeConstant == 0 ? 1 : 1.0 - Math.exp(-dt / camConfig.timeConstant)
+        camTarget.position.lerp(position, alpha)
+        camTarget.quaternion.slerp(quaternion, alpha)
     }
-    resizeCameras()
-    window.addEventListener('resize', () => { resizeCameras() });
 
-    return { fpvCamera, fpvCamTiltJoint, tpvCamera, tpvData, tpvCamTarget, tpvCamTiltJoint }
+    return { camTarget, camAnchor, update }
 }
 
-export function updateTpvCamera(tpvCamTarget, tpvData, droneNode, dt) {
-    const alpha = 1.0 - Math.exp(-dt / tpvData.timeConstant)
-    tpvCamTarget.position.lerp(droneNode.position, alpha)
-    tpvCamTarget.quaternion.slerp(droneNode.quaternion, alpha)
+export function createCamera(camConfig) {
+    // for rendering
+    const halfDiagonal = Math.tan(camConfig.fieldOfView * deg / 2)
+    const mount = new THREE.Object3D()
+    const camera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
+    mount.add(camera)
+    camera.quaternion.set(-0.5, -0.5, 0.5, 0.5) // rotate to match drone coordinate system
+
+    function resize() {
+        const aspect = window.innerWidth / window.innerHeight
+        const halfVertical = halfDiagonal / Math.sqrt(aspect * aspect + 1)
+        const vfov = 2 * Math.atan(halfVertical) / deg
+        camera.aspect = aspect;
+        camera.fov = vfov;
+        camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize)
+    resize()
+
+    return { mount, camera }
 }

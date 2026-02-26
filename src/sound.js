@@ -40,18 +40,18 @@ function frequencyToCents(recordingFrequency, targetFrequency) {
 
 export function updateSound(
     { propSounds, recordingFrequency, maxThrustFrequency, tiltDeltaFrequency, oscillateFrequency, music },
-    throttle, rollInput, pitchInput, yawInput
+    { throttleInput, rollInput, pitchInput, yawInput }
 ) {
 
     let t = performance.now() / 1000
     let frequencies = [
-        maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t + 4)
+        maxThrustFrequency * throttleInput + oscillateFrequency * Math.sin(t + 4)
         + (+ pitchInput + yawInput + rollInput) * tiltDeltaFrequency,
-        maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t * 0.91245142 + 5)
+        maxThrustFrequency * throttleInput + oscillateFrequency * Math.sin(t * 0.91245142 + 5)
         + (+ pitchInput - yawInput - rollInput) * tiltDeltaFrequency,
-        maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t * 0.85234134 + 7)
+        maxThrustFrequency * throttleInput + oscillateFrequency * Math.sin(t * 0.85234134 + 7)
         + (- pitchInput + yawInput - rollInput) * tiltDeltaFrequency,
-        maxThrustFrequency * Math.sqrt(throttle) + oscillateFrequency * Math.sin(t * 0.73514635 + 20)
+        maxThrustFrequency * throttleInput + oscillateFrequency * Math.sin(t * 0.73514635 + 20)
         + (- pitchInput - yawInput + rollInput) * tiltDeltaFrequency
     ]
 

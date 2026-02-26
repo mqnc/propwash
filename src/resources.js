@@ -1,10 +1,6 @@
-//import RAPIER from 'https://cdn.skypack.dev/@dimforge/rapier3d-compat';
-import RAPIER from 'https://cdn.skypack.dev/pin/@dimforge/rapier3d-compat@v0.19.3-Hmo5REaX4aU99UROofMk/mode=imports,min/optimized/@dimforge/rapier3d-compat.js'
-import * as THREE from 'three';
+import { RAPIER } from './rapier.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-
-export { THREE, RAPIER }
 
 export async function loadResources(config, canvas) {
 
@@ -22,6 +18,20 @@ export async function loadResources(config, canvas) {
             }, { once: true });
         });
     }
+
+    // physics worker
+    const physicsWorker = new Worker("src/physicsworker.js", { type: "module" });
+    physicsWorker.onerror = (event) => {
+        throw new Error("worker did not start");
+    };
+    const waitForReady = new Promise(resolve => {
+        physicsWorker.addEventListener("message", function handler(e) {
+            if (e.data === "ready") {
+                physicsWorker.removeEventListener("message", handler);
+                resolve(physicsWorker);
+            }
+        });
+    });
 
     // Load Resources
     let progressList = {}
@@ -43,7 +53,7 @@ export async function loadResources(config, canvas) {
     }
 
     let [
-        rapier,
+        workerReady,
         droneModel,
         propWav,
         terrainModel,
@@ -52,7 +62,7 @@ export async function loadResources(config, canvas) {
         musicWav,
         clicked
     ] = await Promise.all([
-        /* rapier = */ RAPIER.init(),
+        /* workerReady = */ waitForReady,
         /* droneModel = */ gltfLoader.loadAsync(config.aircraft.model.path, progressCallbackFactory()),
         /* propWav = */ audioLoader.loadAsync(config.aircraft.propSound.path, progressCallbackFactory()),
         /* terrainModel = */ gltfLoader.loadAsync(config.map.model.path, progressCallbackFactory()),
@@ -63,7 +73,7 @@ export async function loadResources(config, canvas) {
     ])
 
     return {
-        rapier,
+        physicsWorker,
         droneModel,
         propWav,
         terrainModel,

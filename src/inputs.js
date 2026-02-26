@@ -1,5 +1,6 @@
 
 import { clamp } from './utils.js'
+import { dt } from './config.js'
 
 // globals
 let kbdState = { x: 0, y: 0 };
@@ -46,7 +47,7 @@ window.addEventListener('keydown', e => {
 
 // drone control inputs
 let gpBefore = new Array(100).fill(false)
-export function readInputs(dt) {
+export function readInputs() {
 
     let reset = false
     if (keyPressed['r']) {

@@ -6,11 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/x-icon" href="media/favicon.ico">
     <title>PropWash</title>
+
+    <!-- IMPORTANT: the importmap does not work with the worker, if you change the three version here, you also need to change it in src/three.js -->
+     
     <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@v0.182.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.182.0/examples/jsm/"
+        "three": "https://cdn.jsdelivr.net/npm/three@v0.183.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.183.0/examples/jsm/"
       }
     }
     </script>

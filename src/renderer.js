@@ -9,7 +9,7 @@ import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 // import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 
 import { deg } from './utils.js'
-import { THREE } from './resources.js'
+import { THREE } from './three.js'
 
 export const DRONE_LAYER = 1; // for creating mask stencil for post processing
 

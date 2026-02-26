@@ -1,9 +1,10 @@
 
-import { THREE, RAPIER } from './resources.js'
-import { rpyDegToQuat } from './utils.js'
-import { readInputs } from './inputs.js'
-import { updateSound } from './sound.js'
-import { inch, deg, clamp, lerp } from './utils.js'
+import { THREE } from './three.js'
+import { RAPIER } from './rapier.js'
+import { inch, deg, clamp, lerp, rpyDegToQuat } from './utils.js'
+import { calcDrownInertia } from './dronebody.js'
+// import { readInputs } from './inputs.js'
+// import { updateSound } from './sound.js'
 
 export function initControls(config, dt) {
 
@@ -13,26 +14,32 @@ export function initControls(config, dt) {
         + Math.pow(config.map.gravity[2], 2)
     )
 
+    const droneInertia = calcDrownInertia(config)
+
     const maxSingleMotorThrust = config.aircraft.maxCombinedThrust / 4
     const lever = config.aircraft.wheelbase * 0.5 * Math.SQRT1_2 // from center of mass to motor along x or y
     const maxMotorDrag = 0.07 * maxSingleMotorThrust * (config.aircraft.propSize * inch) // according to ChatGPT
 
-    return {
+    const controlData = {
         trace: {
             checkpoints: [], // for backtracking when stuck
             nextCheckpoint: Math.ceil(0.5 / dt) // number of steps til next checkpoint
         },
+        droneInertia,
         maxPitchRollTorque: 4 * lever * maxSingleMotorThrust,
         //maxYawTorque: 2 * (config.aircraft.wheelbase / 2) * maxMotorDrag,
         maxYawTorque: 4 * lever * maxSingleMotorThrust, // TODO: not realistic
         hoverThrottle: g * config.aircraft.mass / config.aircraft.maxCombinedThrust,
     }
+
+    return controlData
 }
 
-export function controlDrone(controlData, droneBody, droneInertia, soundData, config, dt) {
+export function controlDrone(inputs, controlData, droneBody, config, dt) {
 
     const {
         trace,
+        droneInertia,
         maxPitchRollTorque,
         maxYawTorque,
         hoverThrottle
@@ -47,7 +54,7 @@ export function controlDrone(controlData, droneBody, droneInertia, soundData, co
         if (trace.checkpoints.length > 3600) { trace.checkpoints.shift() }
     }
 
-    const { throttleInput, rollInput, pitchInput, yawInput, reset } = readInputs(dt)
+    const { throttleInput, rollInput, pitchInput, yawInput, reset } = inputs
 
     if (reset) {
         droneBody.resetForces(true);
@@ -78,8 +85,6 @@ export function controlDrone(controlData, droneBody, droneInertia, soundData, co
     else {
         throttle = hoverThrottle + (throttleInput * 2 - 1) * (1 - hoverThrottle)
     }
-
-    updateSound(soundData, throttle, rollInput, pitchInput, yawInput)
 
     const rotation = droneBody.rotation();
     const q = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);

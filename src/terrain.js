@@ -1,13 +1,15 @@
 
-import { THREE, RAPIER } from './resources.js'
+import { THREE } from './three.js'
 import { rpyDegToQuat } from './utils.js'
 
-export function createTerrain(terrainModel, config, scene, world) {
+export function createTerrain(terrainModel, config, scene) {
     let terrainObject = terrainModel.scene
     scene.add(terrainObject);
     terrainObject.position.set(...config.map.model.position)
     terrainObject.quaternion.copy(rpyDegToQuat(config.map.model.rollPitchYaw))
     terrainObject.scale.set(...config.map.model.scale)
+
+    let terrainMeshData = []
 
     terrainObject.updateWorldMatrix(true, true);
     terrainObject.traverse((child) => {
@@ -22,22 +24,21 @@ export function createTerrain(terrainModel, config, scene, world) {
         const worldMatrix = child.matrixWorld;
         const v = new THREE.Vector3();
 
-        const worldPositions = new Float32Array(posAttr.count * 3);
+        const vertices = new Float32Array(posAttr.count * 3);
 
         for (let i = 0; i < posAttr.count; i++) {
             v.fromBufferAttribute(posAttr, i);
             v.applyMatrix4(worldMatrix);
 
-            worldPositions[i * 3 + 0] = v.x;
-            worldPositions[i * 3 + 1] = v.y;
-            worldPositions[i * 3 + 2] = v.z;
+            vertices[i * 3 + 0] = v.x;
+            vertices[i * 3 + 1] = v.y;
+            vertices[i * 3 + 2] = v.z;
         }
 
-        const indices = indexAttr ? indexAttr.array : undefined;
+        const faces = new Uint16Array(indexAttr.array)
 
-        const trimeshDesc = RAPIER.ColliderDesc.trimesh(worldPositions, indices);
-        world.createCollider(trimeshDesc);
+        terrainMeshData.push({ vertices:vertices.buffer, faces:faces.buffer })
     });
 
-    return terrainObject
+    return { terrainObject, terrainMeshData }
 }

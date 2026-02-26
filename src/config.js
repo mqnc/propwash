@@ -1,6 +1,10 @@
 
 import JSON5 from 'https://unpkg.com/json5@2/dist/index.min.mjs'
 
+// fix config
+export const dt = 0.01 // physics timestep
+
+
 // allows to load layered config files:
 // config files can reference other config files with the "extends" key
 // multiple config files can be specified with the "config" query parameter as a comma separated list

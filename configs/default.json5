@@ -50,13 +50,14 @@
         },
         camera: {
             firstPerson: {
-                position: [ 0.2, 0.0, 0.0, ],
-                tilt: 40, // deg upwards
+                position: [ 0.2, 0.0, 0.0, ], // m
+                rollPitchYaw: [ 0.0, 40.0, 0.0, ], // deg
                 fieldOfView: 150, // deg diagonal
+                timeConstant: 0.0001, // first order smoothing of pose
             },
             thirdPerson: {
-                distance: 1.0,
-                tilt: 40, // deg upwards
+                position: [ -1.0, 0.0, 0.6, ], // m
+                rollPitchYaw: [ 0.0, 40.0, 0.0, ], // deg
                 fieldOfView: 90, // deg diagonal
                 timeConstant: 0.01, // first order smoothing of pose
             },

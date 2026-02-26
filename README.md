@@ -56,22 +56,24 @@ The assets used in this project are under Creative Commons licenses. They are **
 ## Todo
 
 * beginner drone should not descend in the beginning
-* cooler name? Quadsch? Quadsimodo? AweQuad?
-* worker for physics?
-* bando and park slow now
+* cooler name? Quadsch? Quadsimodo? AweQuad? Roflcopter? Cumkwat?
+* make debug drawing work with worker architecture
 * anti turtleing
 * reset warp checkpoints by distance, not time
 * rebuild raycast for camera position
 * stabilization and tilt limiting combined oscillates
 * properer drone physics?
+* better physics -> sound mapping
 * dead zone configurable
 * config panel
 * CCD
 * solve the situations with the props cancelling motion blur
+* exposure parameter for motion blur
 * shadows
 * tasks (at least checkpoints)
 * crash sounds
 * phone control
+* maybe first rotate the tpv camera and then translate it?
 
 ## Neglected Physics
 
