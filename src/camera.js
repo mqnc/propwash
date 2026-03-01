@@ -1,10 +1,11 @@
 
 import { THREE } from './three.js'
+import { RAPIER } from './rapier.js'
 import { deg } from './utils.js'
 import { dt } from './config.js'
 import { rpyDegToQuat } from './utils.js'
 
-export function createCameraAnchor(camConfig) {
+export function createCameraAnchor(camConfig, avoidCollision = false, world = null, ignoreBody = null) {
     // physical position, computed in the worker
     const camTarget = new THREE.Object3D() // follows the drone with first order smoothing
     const camAnchor = new THREE.Object3D() // actual camera pose
@@ -16,6 +17,25 @@ export function createCameraAnchor(camConfig) {
         const alpha = camConfig.timeConstant == 0 ? 1 : 1.0 - Math.exp(-dt / camConfig.timeConstant)
         camTarget.position.lerp(position, alpha)
         camTarget.quaternion.slerp(quaternion, alpha)
+
+        camAnchor.position.set(...camConfig.position)
+
+        if (avoidCollision) {
+            const ray = new RAPIER.Ray(
+                camTarget.position,
+                camAnchor.getWorldPosition(new THREE.Vector3()).sub(camTarget.position)
+            );
+
+            const maxToi = 1.0;
+            const solid = false;
+
+            const hit = world.castRay(ray, maxToi, solid, null, null, null, ignoreBody);
+            if (hit != null) {
+                const hitPoint = ray.pointAt(hit.timeOfImpact);
+                const localHitPoint = camTarget.worldToLocal(new THREE.Vector3(hitPoint.x, hitPoint.y, hitPoint.z));
+                camAnchor.position.copy(localHitPoint);
+            }
+        }
     }
 
     return { camTarget, camAnchor, update }

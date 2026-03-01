@@ -50,7 +50,7 @@ async function main() {
     const mockScene = new THREE.Scene()
     const fpv = createCameraAnchor(config.aircraft.camera.firstPerson)
     mockScene.add(fpv.camTarget)
-    const tpv = createCameraAnchor(config.aircraft.camera.thirdPerson)
+    const tpv = createCameraAnchor(config.aircraft.camera.thirdPerson, true, world, droneBody)
     mockScene.add(tpv.camTarget)
 
     const controlData = initControls(config, dt)
