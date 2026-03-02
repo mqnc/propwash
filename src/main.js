@@ -34,10 +34,9 @@ async function main() {
     if (debug) { scene.add(new THREE.AxesHelper(1)); }
     const gVector = new THREE.Vector3(...config.map.gravity)
     THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
-    const droneStencilScene = new THREE.Scene()
 
     // renderer
-    const { render, canvas } = createRenderPipeline(config, scene)
+    const { render, canvas, stepMotionBlurCamera } = createRenderPipeline(config, scene)
 
     // resources
     const { physicsWorker, droneModel, propWav, terrainModel, bgMap, envMap, musicWav } = await loadResources(config, canvas)
@@ -77,14 +76,25 @@ async function main() {
     let selectedCamera = config.aircraft.camera.selected === "firstPerson" ? fpv.camera : tpv.camera
 
     // physics world
+
+    let pause = false
+    window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() === 'p') { pause = !pause } });
+
+
     physicsWorker.postMessage({ "config": config })
     physicsWorker.addEventListener("message", (e) => {
+        if (pause) { return }
         droneNode.position.fromArray(e.data.drone.xyz)
         droneNode.quaternion.fromArray(e.data.drone.qxyzw)
         fpv.mount.position.fromArray(e.data.fpvCamera.xyz)
         fpv.mount.quaternion.fromArray(e.data.fpvCamera.qxyzw)
         tpv.mount.position.fromArray(e.data.tpvCamera.xyz)
         tpv.mount.quaternion.fromArray(e.data.tpvCamera.qxyzw)
+        fpv.mount.updateMatrixWorld()
+        tpv.mount.updateMatrixWorld()
+        selectedCamera.updateProjectionMatrix()
+        selectedCamera.updateMatrixWorld()
+        stepMotionBlurCamera(selectedCamera)
         engineStats.update()
     })
 
@@ -101,6 +111,7 @@ async function main() {
     // run graphics
     function animate() {
         requestAnimationFrame(animate);
+        if (pause) { return }
         if (debug) { updateDebugRender(world, debugGeometry) }
         droneMixer.setTime(Math.random() * 1000)
 

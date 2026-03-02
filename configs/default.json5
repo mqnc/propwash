@@ -6,6 +6,7 @@
         composerResolutionScale: 2.0, // virtual image before fisheye effect
         rendererResolutionScale: 1.0, // final rendering
         antiAlias: true,
+        motionBlurShutterSpeed: 480, // 1/s (Infinity for no motion blur)
     },
 
     aircraft: {

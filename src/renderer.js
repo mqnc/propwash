@@ -8,6 +8,7 @@ import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
 // import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 // import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 
+import { dt } from './config.js'
 import { deg } from './utils.js'
 import { THREE } from './three.js'
 
@@ -49,7 +50,7 @@ export function createRenderPipeline(config, scene) {
     const renderPass = new RenderPass(scene, null)
     composer.addPass(renderPass)
 
-    const motionBlur = createMotionBlurPass()
+    const motionBlur = createMotionBlurPass(1.0 / config.settings.motionBlurShutterSpeed)
     composer.addPass(motionBlur.pass)
 
     //const ssaoPass = new SSAOPass(scene, new THREE.PerspectiveCamera());
@@ -111,8 +112,7 @@ export function createRenderPipeline(config, scene) {
         renderer.setClearColor(colorBefore, 1);
         scene.background = backgroundBefore;
 
-        motionBlur.updateUniforms(
-            selectedCamera,
+        motionBlur.updateTextures(
             composer.readBuffer.depthTexture,
             maskTarget.texture
         )
@@ -120,7 +120,7 @@ export function createRenderPipeline(config, scene) {
         composer.render()
     }
 
-    return { render, canvas }
+    return { render, canvas, stepMotionBlurCamera: motionBlur.stepCamera }
 }
 
 function createFisheyePass() {
@@ -181,7 +181,7 @@ function createFisheyePass() {
     return { pass, updateUniforms }
 }
 
-function createMotionBlurPass() {
+function createMotionBlurPass(exposure) {
 
     // created by chatGPT, looks alright in game, not sure if it's correct
 
@@ -194,7 +194,8 @@ function createMotionBlurPass() {
             invView: { value: new THREE.Matrix4() },
             prevViewProj: { value: new THREE.Matrix4() },
             currViewProj: { value: new THREE.Matrix4() },
-            blurStrength: { value: 1.0 }
+            dt: { value: dt },
+            exposure: { value: exposure },
         },
         vertexShader: `
             varying vec2 vUv;
@@ -216,7 +217,8 @@ function createMotionBlurPass() {
             uniform mat4 invView;
             uniform mat4 prevViewProj;
             uniform mat4 currViewProj;
-            uniform float blurStrength;
+            uniform float dt;
+            uniform float exposure;
 
             vec3 getWorldPos(vec2 uv, float depth) {
                 float z = depth * 2.0 - 1.0;
@@ -244,15 +246,15 @@ function createMotionBlurPass() {
                 vec4 prevClip = prevViewProj * vec4(worldPos, 1.0);
                 prevClip /= prevClip.w;
 
-                vec2 velocity = (currClip.xy - prevClip.xy) * 0.5 * blurStrength;
+                vec2 velocity = (currClip.xy - prevClip.xy) * exposure / dt;
 
                 vec4 color = texture2D(tDiffuse, vUv);
                 const int maxSamples = 12;
                 int actualSamples = 1;
 
                 for (int i = 0; i < maxSamples; i++) {
-                    float t = float(i) / float(maxSamples - 1);
-                    vec2 offset = vUv - velocity * t;
+                    float q = float(i) / float(maxSamples - 1);
+                    vec2 offset = vUv - velocity * q;
                     if (texture2D(tMask, offset).r < 0.5){ // don't sample drone
                         color += texture2D(tDiffuse, offset);
                         actualSamples += 1;
@@ -264,7 +266,8 @@ function createMotionBlurPass() {
         `
     });
 
-    const updateUniforms = (camera, depthTexture, maskTexture) => {
+    const stepCamera = (camera) => {
+        // has to be called each physics step
         pass.uniforms.invProjection.value.copy(camera.projectionMatrixInverse)
         pass.uniforms.invView.value.copy(camera.matrixWorld)
         pass.uniforms.prevViewProj.value.copy(pass.uniforms.currViewProj.value)
@@ -272,9 +275,12 @@ function createMotionBlurPass() {
             camera.projectionMatrix,
             camera.matrixWorldInverse
         );
+    }
+
+    const updateTextures = (depthTexture, maskTexture) => {
         pass.uniforms.tDepth.value = depthTexture
         pass.uniforms.tMask.value = maskTexture
     }
 
-    return { pass, updateUniforms }
+    return { pass, stepCamera, updateTextures }
 }
