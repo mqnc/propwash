@@ -42,7 +42,7 @@ async function main() {
     for (const part of terrain) {
         const trimeshDesc = RAPIER.ColliderDesc.trimesh(
             new Float32Array(part.vertices),
-            new Uint16Array(part.faces)
+            new Uint32Array(part.faces)
         );
         world.createCollider(trimeshDesc);
     }

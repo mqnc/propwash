@@ -24,6 +24,8 @@ export function createTerrain(terrainModel, config, scene) {
         const worldMatrix = child.matrixWorld;
         const v = new THREE.Vector3();
 
+        //child.material = new THREE.MeshNormalMaterial()
+
         const vertices = new Float32Array(posAttr.count * 3);
 
         for (let i = 0; i < posAttr.count; i++) {
@@ -35,9 +37,9 @@ export function createTerrain(terrainModel, config, scene) {
             vertices[i * 3 + 2] = v.z;
         }
 
-        const faces = new Uint16Array(indexAttr.array)
+        const faces = new Uint32Array(indexAttr.array)
 
-        terrainMeshData.push({ vertices:vertices.buffer, faces:faces.buffer })
+        terrainMeshData.push({ vertices: vertices.buffer, faces: faces.buffer })
     });
 
     return { terrainObject, terrainMeshData }
