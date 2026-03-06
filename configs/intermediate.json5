@@ -3,28 +3,22 @@
 
     aircraft: {
 
-        maxCombinedThrust: 10.0, // N
+        maxCombinedThrust: 20.0, // N
 
         dragForceOverSpeed: [ 0.0, 0.0, 0.0, ], // N/(m/s)
         dragForceOverSpeedSquared: [ 0.01, 0.01, 0.1, ], // N/(m/s)^2
-
-        maxRollRate: 150.0, // deg/s
+        
+        maxRollRate: 200.0, // deg/s
         rollTimeConstant: 0.1, // s
-        maxPitchRate: 150.0, // deg/s
+        maxPitchRate: 200.0, // deg/s
         pitchTimeConstant: 0.1, // s
-        maxYawRate: 100.0, // deg/s
+        maxYawRate: 150.0, // deg/s
         yawTimeConstant: 0.1, // s
-
-        // return turn rate proportionally to tilt angle
-        stabilization: 3.0, // (deg/s)/deg
-
-        // commanded turn rate is reduced at 90% of angleLimit and cut off at 110%
-        angleLimit: 60.0, // deg
-
-        propSound: {
+        
+        propSound:{
             maxThrustRPM: 12000,
         },
-
+        
         camera: {
             firstPerson: {
                 rollPitchYaw: [ 0.0, 15.0, 0.0, ], // deg
@@ -39,7 +33,7 @@
 
     map: {
         mission: {
-            checkpointScale: 1.5,
+            checkpointScale: 1.22,
         },
     },
 }

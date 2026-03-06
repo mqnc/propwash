@@ -1,0 +1,16 @@
+{
+    extends: [ "configs/issum.json5", ],
+
+    map: {
+        mission: {
+            type: "race",
+            mode: "point-to-point",
+            checkpoints: [
+                "checkpoint", "checkpoint001", "checkpoint002", "checkpoint003",
+                "checkpoint004", "checkpoint005", "checkpoint006", "checkpoint007",
+                "checkpoint008", "checkpoint009", "checkpoint010",
+            ],
+            exclude: [ "balloon.*", ],
+        },
+    },
+}

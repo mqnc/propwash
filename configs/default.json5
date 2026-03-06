@@ -79,16 +79,32 @@
         },
         gravity: [ 0.0, 0.0, 9.81, ], // m/s^2
         timeScale: 1.0,
+        mission: {
+            type: "freestyle", // no mission
+            // type: "race",
+            // mode: "sequence", // all checkpoints in specified order
+            // mode: "random", // all checkpoints in arbitrary order
+            // mode: {laps: 5}, // lap through all checkpoints in order 5 times, ends at start
+            // checkpoints: [ "checkpoint1", "checkpoint2", "checkpoint3", ],
+            // exclude: [ "owl*", ], // regexes for excluding objects from other missions
+            checkpointScale: 1.0,
+            checkpointSound: {
+                path: "assets/sound/406266__anthousai__hit-hollow-03.wav",
+                volume: 0.6,
+            },
+        },
     },
 
     background: {
         // https://github.com/mrdoob/three.js/issues/33003
-        backgroundMap: {
+        backgroundMap: { // background image
             path: "assets/envs/pretoria_gardens_1k.hdr",
+            intensity: 1.0,
             rollPitchYaw: [ -90.0, 0.0, 0.0, ], // deg
         },
-        environmentMap: {
+        environmentMap: { // lighting and reflections for objects
             path: "assets/envs/pretoria_gardens_1k.hdr",
+            intensity: 1.0,
             rollPitchYaw: [ -90.0, 0.0, 0.0, ], // deg
         },
         music: {

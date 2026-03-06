@@ -42,5 +42,5 @@ export function createDroneBody(config, world) {
 
     const droneCollider = world.createCollider(droneDesc, droneBody);
 
-    return droneBody
+    return { droneBody, droneCollider }
 }

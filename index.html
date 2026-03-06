@@ -8,7 +8,7 @@
     <title>PropWash</title>
 
     <!-- IMPORTANT: the importmap does not work with the worker, if you change the three version here, you also need to change it in src/three.js -->
-     
+
     <script type="importmap">
     {
       "imports": {
@@ -59,6 +59,31 @@
     </div>
 
     <script type="module" src="./src/main.js"></script>
+
+    <div id="timer" style="
+        height:5vh;
+        position:absolute;
+        top:90%;
+        left:50%;
+        transform:translate(-50%,-50%);
+        border:4px solid white;
+        background-color: black;
+        color: lightgray;
+        border-radius:20px;
+        box-sizing:border-box;
+        padding:10px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        pointer-events: none;
+        font-size:4vh;
+        font-family:monospace;
+        visibility: hidden;
+    ">
+        00:00'00
+    </div>
+
 </body>
 
 </html>

@@ -1,0 +1,16 @@
+{
+    extends: [ "configs/issum.json5", ],
+
+    map: {
+        mission: {
+            type: "race",
+            mode: "random",
+            checkpoints: [
+                "balloon", "balloon001", "balloon002", "balloon003",
+                "balloon004", "balloon005", "balloon006", "balloon007",
+                "balloon008", "balloon009", "balloon010", "balloon011",
+            ],
+            exclude: [ "checkpoint.*", ],
+        },
+    },
+}

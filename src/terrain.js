@@ -10,12 +10,36 @@ export function createTerrain(terrainModel, config, scene) {
     terrainObject.scale.set(...config.map.model.scale)
 
     let terrainMeshData = []
+    let checkpoints = {}
 
     terrainObject.updateWorldMatrix(true, true);
     terrainObject.traverse((child) => {
         // extract geometry for physics
 
         if (!child.isMesh) return;
+
+        let isSensor = false;
+
+        if (config.map.mission.type === "race") {
+            for (const regex of config.map.mission.exclude) {
+                if (child.name.match(regex)) {
+                    child.visible = false
+                    return
+                }
+            }
+
+            if (config.map.mission.checkpoints.includes(child.name)) {
+                isSensor = true
+                checkpoints[child.name] = child
+                child.scale.multiplyScalar(config.map.mission.checkpointScale)
+                terrainObject.updateWorldMatrix(false, true);
+                child.traverse((checkpointChild) => {
+                    checkpointChild.material = checkpointChild.material.clone()
+                    checkpointChild.material.transparent = true
+                    checkpointChild.material.userData.originalOpacity = checkpointChild.material.opacity
+                })
+            }
+        }
 
         const geom = child.geometry;
         const posAttr = geom.attributes.position;
@@ -39,8 +63,26 @@ export function createTerrain(terrainModel, config, scene) {
 
         const faces = new Uint32Array(indexAttr.array)
 
-        terrainMeshData.push({ vertices: vertices.buffer, faces: faces.buffer })
+        terrainMeshData.push({
+            name: child.name,
+            vertices: vertices.buffer,
+            faces: faces.buffer,
+            isSensor
+        })
     });
 
-    return { terrainObject, terrainMeshData }
+    const setActiveCheckpoints = (active) => {
+        for (const cpMesh of Object.values(checkpoints)) {
+            cpMesh.traverse((checkpointChild) => {
+                checkpointChild.material.opacity = checkpointChild.material.userData.originalOpacity * 0.18
+            })
+        }
+        for (const cpName of active) {
+            checkpoints[cpName].traverse((checkpointChild) => {
+                checkpointChild.material.opacity = checkpointChild.material.userData.originalOpacity
+            })
+        }
+    }
+
+    return { terrainObject, terrainMeshData, setActiveCheckpoints }
 }

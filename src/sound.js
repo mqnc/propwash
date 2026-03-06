@@ -1,7 +1,7 @@
 
 import { clamp } from './utils.js'
 
-export function initSound(config, camera, droneNode, propWav, musicWav) {
+export function initSound(config, camera, droneNode, propWav, checkpointWav, musicWav) {
 
     const listener = new THREE.AudioListener();
     camera.add(listener);
@@ -28,7 +28,12 @@ export function initSound(config, camera, droneNode, propWav, musicWav) {
     music.setVolume(config.background.music.volume);
     music.play();
 
-    return { propSounds, recordingFrequency, maxThrustFrequency, tiltDeltaFrequency, oscillateFrequency, music }
+    const checkpointSound = new THREE.Audio(listener);
+    checkpointSound.setBuffer(checkpointWav);
+    checkpointSound.setLoop(false);
+    checkpointSound.setVolume(config.map.mission.checkpointSound.volume);
+
+    return { propSounds, recordingFrequency, maxThrustFrequency, tiltDeltaFrequency, oscillateFrequency, checkpointSound, music }
 }
 
 function frequencyToCents(recordingFrequency, targetFrequency) {

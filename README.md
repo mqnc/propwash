@@ -1,9 +1,13 @@
 # propwash
 FPV drone simulator for the web
 
+TL;DR! Let me [play](https://mqnc.github.io/propwash/?config=configs/issum_ascend.json5,configs/beginner.json5)!
+
+## Status
+
 Everything is still in prototype phase!
 
-* Use a gamepad or WASD as the left stick, mouse as the right stick (need to click into the game window to capture the mouse first)
+* Use a gamepad (strongly recommended) or WASD as the left stick, mouse as the right stick (need to click into the game window to capture the mouse first)
 * Keys 1-4 switch between the different drone control modes with mode 2 as default
 * Use R on keyboard or gamepad (button 5) to reset position to where it was a second ago
 * Use space to switch between first person and third person camera
@@ -12,32 +16,33 @@ If you clone the repo and host it locally, you can configurate your drone to you
 
 ## Demos
 
-[Playground, beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/playground.json5)
+| Mission | Skill |
+|---|---|
+|Issum — Storm the Castle|[Noob](https://mqnc.github.io/propwash/?config=configs/issum_ascend.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/issum_ascend.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/issum_ascend.json5)
+|Issum — Pop all 12 Balloons|[Noob](https://mqnc.github.io/propwash/?config=configs/issum_balloons.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/issum_balloons.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/issum_balloons.json5)
+|Issum — Freestyle|[Noob](https://mqnc.github.io/propwash/?config=configs/issum.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/issum.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/issum.json5)
+|Playground — Freestyle|[Noob](https://mqnc.github.io/propwash/?config=configs/playground.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/playground.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/playground.json5)
+|Bando — Freestyle|[Noob](https://mqnc.github.io/propwash/?config=configs/bando.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/bando.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/bando.json5)
+|Cyber Crazy Park — Freestyle|[Noob](https://mqnc.github.io/propwash/?config=configs/park.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/park.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/park.json5)
+|Sketchfab Town (80 MB) — Freestyle|[Noob](https://mqnc.github.io/propwash/?config=configs/sketchfab.json5,configs/beginner.json5) / [Mid](https://mqnc.github.io/propwash/?config=configs/sketchfab.json5,configs/intermediate.json5) / [Pro](https://mqnc.github.io/propwash/?config=configs/sketchfab.json5)
 
-[Playground, pro](https://mqnc.github.io/propwash/?config=configs/playground.json5)
+## Contribute
 
-[Bando, beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/bando.json5)
+I don't actually have any real drone experience beyond some DRL Sim, I need help tweaking parameters!
 
-[Bando, pro](https://mqnc.github.io/propwash/?config=configs/bando.json5)
-
-[Cyber Crazy Park, beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/park.json5)
-
-[Cyber Crazy Park, pro](https://mqnc.github.io/propwash/?config=configs/park.json5)
-
-[Sketchfab Town (80MB), beginner](https://mqnc.github.io/propwash/?config=configs/beginner.json5,configs/sketchfab.json5)
-
-[Sketchfab Town (80MB), pro](https://mqnc.github.io/propwash/?config=configs/sketchfab.json5)
+I'm also not much of a level designer, would be awesome people could contribute maps.
 
 ## Attributions
 
-The assets used in this project are under Creative Commons licenses. They are **not relicensed under MIT** unless explicitly noted.  
+The assets used in this project are subject to various licenses. They are **not relicensed under MIT** unless explicitly noted.  
 
 | Asset | Title | Authors | License |
 |---|---|---|---|
 ||||
 | Models | [Racing drone (Lite Graphics Version)](https://skfb.ly/6zBPO) | [BlueMesh](https://sketchfab.com/BlueMesh) | CC BY 4.0 |
 ||||
-| Maps | [playground 2](https://skfb.ly/pyZnG) | [Pasha](https://sketchfab.com/Pasha-) | CC BY 4.0 |
+| Maps | [Issum, The town on Capital Isle](https://skfb.ly/6zFKD) | [Olee](https://sketchfab.com/Olee) | CC BY 4.0 |
+|| [playground 2](https://skfb.ly/pyZnG) | [Pasha](https://sketchfab.com/Pasha-) | CC BY 4.0 |
 || [Post-Apocalyptic City](https://skfb.ly/pD6BX) | [golukumar](https://sketchfab.com/mortalityrexotable) | CC BY 4.0 |
 || [Amusement park](https://skfb.ly/p7GFu) | [Megame Studio](https://sketchfab.com/megame1) | CC BY-NC-SA 4.0 |
 || [Cartoon Low Poly City \(Mini Pack\)](https://skfb.ly/oE7Oq) | [mertkilic](https://sketchfab.com/mertkilic) | CC BY 4.0 |
@@ -51,6 +56,7 @@ The assets used in this project are under Creative Commons licenses. They are **
 || [Qwantani Noon \(Pure Sky\)](https://polyhaven.com/a/qwantani_noon_puresky) | [Greg Zaal](https://polyhaven.com/all?a=Greg%20Zaal), [Jarod Guest](https://polyhaven.com/all?a=Jarod%20Guest) | CC0 |
 ||||
 | Sounds | [prop sounds](https://www.youtube.com/watch?v=fnYv1KqfEuQ) | [Shane's DIY YouTube channel](https://www.youtube.com/@shanesdiy) | permission from the author |
+|| [hit - hollow 03.wav](https://freesound.org/people/Anthousai/sounds/406266/) | [Anthousai](https://freesound.org/people/Anthousai/) | CC0 |
 ||||
 | Music | [Magenta Metropolis](https://www.free-stock-music.com/fsm-team-escp-magenta-metropolis.html) | [by \| e s c p \|](https://www.escp.space) | CC BY 4.0 |
 ||||
@@ -62,7 +68,7 @@ The assets used in this project are under Creative Commons licenses. They are **
 
 ## Todo
 
-* beginner drone should not descend in the beginning
+* drone should not descend in the beginning
 * cooler name? Quadsch? Quadsimodo? AweQuad? Roflcopter? Cumkwat?
 * make debug drawing work with worker architecture
 * anti turtleing
@@ -71,15 +77,18 @@ The assets used in this project are under Creative Commons licenses. They are **
 * properer drone physics?
 * better physics -> sound mapping
 * dead zone configurable
-* config panel
+* thrust knee configurable
+* live config changes
+* save custom config (browser memory and/or copy-paste text field)
 * CCD
+* CCD for checkpoints!
 * solve the situations with the props cancelling motion blur
 * shadows
-* tasks (at least checkpoints)
 * crash sounds
 * phone control
-* maybe first rotate the tpv camera and then translate it?
+* config: maybe first rotate the tpv camera and then translate it?
 * LOD
+* test slowmotion
 
 ## Neglected Physics
 

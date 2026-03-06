@@ -29,7 +29,7 @@ export function createCameraAnchor(camConfig, avoidCollision = false, world = nu
             const maxToi = 1.0;
             const solid = false;
 
-            const hit = world.castRay(ray, maxToi, solid, null, null, null, ignoreBody);
+            const hit = world.castRay(ray, maxToi, solid, RAPIER.QueryFilterFlags.EXCLUDE_SENSORS, null, null, ignoreBody);
             if (hit != null) {
                 const hitPoint = ray.pointAt(hit.timeOfImpact);
                 const localHitPoint = camTarget.worldToLocal(new THREE.Vector3(hitPoint.x, hitPoint.y, hitPoint.z));

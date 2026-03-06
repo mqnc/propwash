@@ -40,7 +40,16 @@ async function main() {
     const { render, canvas, stepMotionBlurCamera } = createRenderPipeline(config, scene)
 
     // resources
-    const { physicsWorker, droneModel, propWav, terrainModel, bgMap, envMap, musicWav } = await loadResources(config, canvas)
+    const {
+        physicsWorker,
+        droneModel,
+        propWav,
+        checkpointWav,
+        terrainModel,
+        bgMap,
+        envMap,
+        musicWav
+    } = await loadResources(config, canvas)
     document.getElementById('battery').style.display = 'none'
 
     // capture mouse
@@ -56,14 +65,20 @@ async function main() {
 
     // stats
     const { engineStats, graphicsStats } = createStats()
+    if (config.map.mission.type === "race") {
+        document.getElementById('timer').style.visibility = "visible"
+    }
 
     // lighting
     envMap.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = envMap;
     setFromRPYdeg(scene.environmentRotation, config.background.environmentMap.rollPitchYaw);
+    scene.environmentIntensity = config.background.environmentMap.intensity
+
     bgMap.mapping = THREE.EquirectangularReflectionMapping;
     scene.background = bgMap;
     setFromRPYdeg(scene.backgroundRotation, config.background.backgroundMap.rollPitchYaw);
+    scene.backgroundIntensity = config.background.backgroundMap.intensity
 
     // drone
     const { droneNode, droneSize, droneMixer } = createDroneVisuals(droneModel, config, scene)
@@ -76,33 +91,53 @@ async function main() {
     scene.add(tpv.mount)
     let selectedCamera = config.aircraft.camera.selected === "firstPerson" ? fpv.camera : tpv.camera
 
+    // sound
+    const soundData = initSound(config, tpv.camera, droneNode, propWav, checkpointWav, musicWav)
+
     // physics world
+    let finished = false
     physicsWorker.postMessage({ "config": config })
     physicsWorker.addEventListener("message", (e) => {
-        scene.visible = true
-        droneNode.position.fromArray(e.data.drone.xyz)
-        droneNode.quaternion.fromArray(e.data.drone.qxyzw)
-        fpv.mount.position.fromArray(e.data.fpvCamera.xyz)
-        fpv.mount.quaternion.fromArray(e.data.fpvCamera.qxyzw)
-        tpv.mount.position.fromArray(e.data.tpvCamera.xyz)
-        tpv.mount.quaternion.fromArray(e.data.tpvCamera.qxyzw)
-        fpv.mount.updateMatrixWorld()
-        tpv.mount.updateMatrixWorld()
-        selectedCamera.updateProjectionMatrix()
-        selectedCamera.updateMatrixWorld()
-        stepMotionBlurCamera(selectedCamera)
-        engineStats.update()
+        if (e.data.type === "step") {
+            scene.visible = true
+            droneNode.position.fromArray(e.data.drone.xyz)
+            droneNode.quaternion.fromArray(e.data.drone.qxyzw)
+            fpv.mount.position.fromArray(e.data.fpvCamera.xyz)
+            fpv.mount.quaternion.fromArray(e.data.fpvCamera.qxyzw)
+            tpv.mount.position.fromArray(e.data.tpvCamera.xyz)
+            tpv.mount.quaternion.fromArray(e.data.tpvCamera.qxyzw)
+            fpv.mount.updateMatrixWorld()
+            tpv.mount.updateMatrixWorld()
+            selectedCamera.updateProjectionMatrix()
+            selectedCamera.updateMatrixWorld()
+            stepMotionBlurCamera(selectedCamera)
+            let t = e.data.ingameTime
+            let mins = Math.floor(t / 60)
+            let secs = t - mins * 60
+            if (!finished) {
+                document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`.replace('.', "'")
+            }
+            engineStats.update()
+        }
+        else if (e.data.type === "initCheckpoints") {
+            setActiveCheckpoints(e.data.active)
+        }
+        else if (e.data.type === "checkpoint") {
+            setActiveCheckpoints(e.data.active)
+            finished = e.data.finished
+            if (finished) {
+                document.getElementById('timer').style.color = "lime"
+            }
+            soundData.checkpointSound.play()
+        }
     })
 
     // debug
     const debugGeometry = initDebugRender()
 
     // trrain
-    const { terrainObject, terrainMeshData } = createTerrain(terrainModel, config, scene)
+    const { terrainObject, terrainMeshData, setActiveCheckpoints } = createTerrain(terrainModel, config, scene)
     physicsWorker.postMessage({ "terrain": terrainMeshData }, terrainMeshData.flatMap(({ vertices, faces }) => [vertices, faces]))
-
-    // sound
-    const soundData = initSound(config, tpv.camera, droneNode, propWav, musicWav)
 
     // run graphics
     function animate() {

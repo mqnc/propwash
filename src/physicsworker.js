@@ -30,49 +30,136 @@ async function main() {
         });
     }
 
-    // setup stuff
+    // config
     const config = await receive("config")
 
+    // world
     const world = new RAPIER.World({ x: config.map.gravity[0], y: config.map.gravity[1], z: config.map.gravity[2] });
     world.timestep = dt * config.map.timeScale
 
-    const droneBody = createDroneBody(config, world)
+    // drone
+    const { droneBody, droneCollider } = createDroneBody(config, world)
 
+    // terrain
     const terrain = await receive("terrain")
+    const colliderNames = new Map()
     for (const part of terrain) {
         const trimeshDesc = RAPIER.ColliderDesc.trimesh(
             new Float32Array(part.vertices),
             new Uint32Array(part.faces)
         );
-        world.createCollider(trimeshDesc);
+        if (part.isSensor) {
+            trimeshDesc.setSensor(true)
+        }
+        const collider = world.createCollider(trimeshDesc);
+        colliderNames.set(collider, part.name)
     }
 
+    // cameras
     const mockScene = new THREE.Scene()
     const fpv = createCameraAnchor(config.aircraft.camera.firstPerson)
     mockScene.add(fpv.camTarget)
     const tpv = createCameraAnchor(config.aircraft.camera.thirdPerson, true, world, droneBody)
     mockScene.add(tpv.camTarget)
 
+    // inputs
     const controlData = initControls(config, dt)
-
     let inputs = null
     self.addEventListener("message", (e) => {
         inputs = e.data.inputs
     })
 
+    // game logic
+    // a bit unelegant but as the game evolves this will surely be refactored, surely!
+    let game = { type: config.map.mission.type, finished: false }
+    if (game.type === "race") {
+        game.checkpoints = config.map.mission.checkpoints
+        if (config.map.mission.mode === "random") {
+            game.mode = "random"
+            game.checkpointsTodo = new Set()
+            for (const cp of game.checkpoints) {
+                game.checkpointsTodo.add(cp)
+            }
+            postMessage({ type: "initCheckpoints", active: Array.from(game.checkpointsTodo) })
+        }
+        else if (config.map.mission.mode === "point-to-point") {
+            game.mode = "point-to-point"
+            game.activeCheckpoint = game.checkpoints[0]
+            postMessage({ type: "initCheckpoints", active: [game.activeCheckpoint] })
+        }
+        else { // mode must be a {laps:n} object
+            game.mode = "laps"
+            game.lapsLeft = config.map.mission.mode.laps
+            game.activeCheckpoint = game.checkpoints[0]
+            postMessage({ type: "initCheckpoints", active: [game.activeCheckpoint] })
+        }
+    }
+    function handleSensorHit(sensorHit) {
+        if (game.type === "race") {
+            if (game.mode === "random") {
+                if (game.checkpointsTodo.delete(sensorHit)) {
+                    if (game.checkpointsTodo.size === 0) {
+                        game.finished = true
+                    }
+                    postMessage({
+                        type: "checkpoint",
+                        active: Array.from(game.checkpointsTodo),
+                        finished: game.finished
+                    })
+                }
+            }
+            else { // mode === "point-to-point" or "laps"
+                if (game.activeCheckpoint === sensorHit) {
+                    if (game.activeCheckpoint === game.checkpoints[game.checkpoints.length - 1]) { // last checkpoint
+                        if (game.mode === "point-to-point") {
+                            game.finished = true
+                            game.activeCheckpoint = null
+                        }
+                        else { // mode === "laps"
+                            game.lapsLeft -= 1
+                            game.activeCheckpoint = game.checkpoints[0]
+                        }
+                    }
+                    else if ( // first checkpoint after last lap -> finished
+                        game.mode === "laps"
+                        && game.activeCheckpoint === game.checkpoints[0]
+                        && game.lapsLeft === 0
+                    ) {
+                        game.finished = true
+                        game.activeCheckpoint = null
+                    }
+                    else {
+                        game.activeCheckpoint = game.checkpoints[game.checkpoints.indexOf(game.activeCheckpoint) + 1]
+                    }
+                    postMessage({
+                        type: "checkpoint",
+                        active: game.activeCheckpoint ? [game.activeCheckpoint] : [],
+                        finished: game.finished
+                    })
+                }
+            }
+        }
+    }
+
     // run engine
-
     let ingameTime = 0.0
-
-    world.step()
     let tNextStep = performance.now()
     function stepPhysics() {
+
+        world.step()
+        let sensorHit = null
+        world.intersectionPairsWith(droneCollider, (sensorCollider) => {
+            const intersecting = world.intersectionPair(droneCollider, sensorCollider);
+
+            if (intersecting) {
+                sensorHit = colliderNames.get(sensorCollider)
+                handleSensorHit(sensorHit)
+            }
+        });
 
         if (inputs) {
             controlDrone(inputs, controlData, droneBody, config, dt)
         }
-
-        world.step()
 
         const pos = droneBody.translation();
         const rot = droneBody.rotation();
@@ -85,6 +172,7 @@ async function main() {
 
         // update graphics
         postMessage({
+            type: "step",
             wallTime: performance.now(),
             ingameTime: ingameTime,
             drone: {
@@ -98,7 +186,7 @@ async function main() {
             tpvCamera: {
                 xyz: tpv.camAnchor.getWorldPosition(new THREE.Vector3()).toArray(),
                 qxyzw: tpv.camAnchor.getWorldQuaternion(new THREE.Quaternion()).toArray()
-            }
+            },
         })
 
         const tNow = performance.now()
