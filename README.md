@@ -32,6 +32,8 @@ I don't actually have any real drone experience beyond some DRL Sim, I need help
 
 I'm also not much of a level designer, would be awesome people could contribute maps.
 
+Please somehow interact with the Discussion page if you want to contribute.
+
 ## Attributions
 
 The assets used in this project are subject to various licenses. They are **not relicensed under MIT** unless explicitly noted.  
@@ -89,6 +91,7 @@ The assets used in this project are subject to various licenses. They are **not 
 * config: maybe first rotate the tpv camera and then translate it?
 * LOD
 * test slowmotion
+* camera looks in flight direction?
 
 ## Neglected Physics
 

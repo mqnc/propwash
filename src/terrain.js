@@ -20,14 +20,14 @@ export function createTerrain(terrainModel, config, scene) {
 
         let isSensor = false;
 
-        if (config.map.mission.type === "race") {
-            for (const regex of config.map.mission.exclude) {
-                if (child.name.match(regex)) {
-                    child.visible = false
-                    return
-                }
+        for (const regex of config.map.mission.exclude) {
+            if (child.name.match(regex)) {
+                child.visible = false
+                return
             }
+        }
 
+        if (config.map.mission.type === "race") {
             if (config.map.mission.checkpoints.includes(child.name)) {
                 isSensor = true
                 checkpoints[child.name] = child
