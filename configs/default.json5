@@ -10,7 +10,7 @@
     },
 
     aircraft: {
-        type: "quadcopter",
+        type: "quadcopter", // only quadcopter for now
         model: {
             path: "assets/drones/racing_drone_lite_graphics_version.glb",
             position: [ 0.0, 0.0, 0.0, ], // m

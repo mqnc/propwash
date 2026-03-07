@@ -5,16 +5,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';
-// import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 // import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 
 import { dt } from './config.js'
 import { deg } from './utils.js'
 import { THREE } from './three.js'
 
+import { onGuiChange } from './gui.js';
+
 export const DRONE_LAYER = 1; // for creating mask stencil for post processing
 
-export function createRenderPipeline(config, scene) {
+export function createRenderPipeline(config, gui, scene) {
     const renderer = new THREE.WebGLRenderer();
     const canvas = renderer.domElement;
     canvas.style.width = "100%"
@@ -50,23 +51,28 @@ export function createRenderPipeline(config, scene) {
     const renderPass = new RenderPass(scene, null)
     composer.addPass(renderPass)
 
-    const motionBlur = createMotionBlurPass(1.0 / config.settings.motionBlurShutterSpeed)
+    const motionBlur = createMotionBlurPass()
     composer.addPass(motionBlur.pass)
+    onGuiChange(gui, "settings.motionBlurShutterSpeed", (shutterSpeed) => {
+        if (shutterSpeed === Infinity) {
+            motionBlur.pass.enabled = false
+        }
+        else {
+            motionBlur.pass.enabled = true
+            motionBlur.pass.uniforms.exposure.value = 1.0 / shutterSpeed
+        }
+    }, true)
 
     //const ssaoPass = new SSAOPass(scene, new THREE.PerspectiveCamera());
     //ssaoPass.output = SSAOPass.OUTPUT.SSAO
     //composer.addPass(ssaoPass);
 
-    // if (config.settings.antiAlias) {
-    //     composer.addPass(new FXAAPass())
-    // }
-    // const motionBlurPass = new MotionBlurPass(renderer, scene)
-    // composer.addPass(motionBlurPass)
+    const fxaa = new FXAAPass()
+    composer.addPass(fxaa)
+    onGuiChange(gui, "settings.antiAlias", (enable) => { fxaa.enabled = enable }, true)
+
     const fisheye = createFisheyePass()
     composer.addPass(fisheye.pass)
-
-    //const afterimagePass = new AfterimagePass(0.5);
-    //composer.addPass(afterimagePass);
 
     composer.addPass(new OutputPass())
 
@@ -91,6 +97,8 @@ export function createRenderPipeline(config, scene) {
         );
     }
     window.addEventListener('resize', onResize);
+    onGuiChange(gui, "settings.rendererResolutionScale", onResize)
+    onGuiChange(gui, "settings.composerResolutionScale", onResize)
     onResize()
 
     const render = (selectedCamera) => {
@@ -181,7 +189,7 @@ function createFisheyePass() {
     return { pass, updateUniforms }
 }
 
-function createMotionBlurPass(exposure) {
+function createMotionBlurPass() {
 
     // created by chatGPT, looks alright in game, not sure if it's correct
 
@@ -195,7 +203,7 @@ function createMotionBlurPass(exposure) {
             prevViewProj: { value: new THREE.Matrix4() },
             currViewProj: { value: new THREE.Matrix4() },
             dt: { value: dt },
-            exposure: { value: exposure },
+            exposure: { value: 0.0 },
         },
         vertexShader: `
             varying vec2 vUv;

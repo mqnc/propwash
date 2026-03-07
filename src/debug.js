@@ -6,16 +6,14 @@ export function initDebugRender() {
     debugLines.renderOrder = 999;
     scene.add(debugLines);
 
-    return debugGeometry
+    return debugLines
 }
 
-export function updateDebugRender(world, debugGeometry) {
-    const { vertices, colors } = world.debugRender();
+export function updateDebugRender(debugLines, vertexBuffer, colorBuffer) {
+    const positions = new Float32Array(vertexBuffer);
+    const colorArray = new Float32Array(colorBuffer);
 
-    const positions = new Float32Array(vertices);
-    const colorArray = new Float32Array(colors);
-
-    debugGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    debugGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 4));
-    debugGeometry.computeBoundingSphere();
+    debugLines.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    debugLines.geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 4));
+    debugLines.geometry.computeBoundingSphere();
 }

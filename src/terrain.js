@@ -48,8 +48,6 @@ export function createTerrain(terrainModel, config, scene) {
         const worldMatrix = child.matrixWorld;
         const v = new THREE.Vector3();
 
-        //child.material = new THREE.MeshNormalMaterial()
-
         const vertices = new Float32Array(posAttr.count * 3);
 
         for (let i = 0; i < posAttr.count; i++) {

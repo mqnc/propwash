@@ -65,8 +65,11 @@ async function main() {
     // inputs
     const controlData = initControls(config, dt)
     let inputs = null
+    let debug = false
+    let firstDebugMessage = true
     self.addEventListener("message", (e) => {
         inputs = e.data.inputs
+        debug = e.data.debug
     })
 
     // game logic
@@ -171,7 +174,7 @@ async function main() {
         tpv.update(dronePosition, droneQuaternion)
 
         // update graphics
-        postMessage({
+        const message = {
             type: "step",
             wallTime: performance.now(),
             ingameTime: ingameTime,
@@ -187,7 +190,29 @@ async function main() {
                 xyz: tpv.camAnchor.getWorldPosition(new THREE.Vector3()).toArray(),
                 qxyzw: tpv.camAnchor.getWorldQuaternion(new THREE.Quaternion()).toArray()
             },
-        })
+            debug: { isActive: debug },
+        }
+        if (debug) {
+            let buffers = []
+            if (firstDebugMessage) {
+                // since the map is likely massive, we only render it once
+                const { vertices, colors } = world.debugRender(RAPIER.QueryFilterFlags.ONLY_FIXED)
+                message.debug.fixedVertices = vertices.buffer
+                message.debug.fixedColors = colors.buffer
+                buffers.push(vertices.buffer)
+                buffers.push(colors.buffer)
+                firstDebugMessage = false
+            }
+            const { vertices, colors } = world.debugRender(RAPIER.QueryFilterFlags.EXCLUDE_FIXED)
+            message.debug.dynamicVertices = vertices.buffer
+            message.debug.dynamicColors = colors.buffer
+            buffers.push(vertices.buffer)
+            buffers.push(colors.buffer)
+            postMessage(message, buffers)
+        }
+        else {
+            postMessage(message)
+        }
 
         const tNow = performance.now()
         tNextStep = tNextStep + dt * 1000

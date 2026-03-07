@@ -72,7 +72,6 @@ The assets used in this project are subject to various licenses. They are **not 
 
 * drone should not descend in the beginning
 * cooler name? Quadsch? Quadsimodo? AweQuad? Roflcopter? Cumkwat?
-* make debug drawing work with worker architecture
 * anti turtleing
 * reset warp checkpoints by distance, not time
 * stabilization and tilt limiting combined oscillates
@@ -92,6 +91,7 @@ The assets used in this project are subject to various licenses. They are **not 
 * LOD
 * test slowmotion
 * camera looks in flight direction?
+* can't set shutter speed to infinity with lil gui
 
 ## Neglected Physics
 

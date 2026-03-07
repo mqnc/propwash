@@ -1,6 +1,27 @@
 
 import GUI from 'three/addons/libs/lil-gui.module.min.js';
 
+let ignore = [
+    "version",
+    "aircraft.type",
+]
+
+let requiresReload = [
+]
+
+function getController(gui, path) {
+    const parts = path.split('.');
+    const prop = parts.pop();
+    let folder = gui;
+
+    for (const p of parts) {
+        folder = folder.folders.find(f => f._title === p);
+        if (!folder) return null;
+    }
+
+    return folder.controllers.find(c => c._name === prop);
+}
+
 export function createGui(config) {
     const gui = new GUI({ closeFolders: true });
 
@@ -27,4 +48,33 @@ export function createGui(config) {
     }
 
     walkFolder(gui, config)
+
+    for (const path of ignore) {
+        // was a bit easier than tracking the current path in walkFolder
+        getController(gui, path).destroy()
+    }
+
+    return gui
+}
+
+const _guiChangeCallbacks = new WeakMap();
+
+export function onGuiChange(gui, path, callback, immediate = false) {
+    const controller = getController(gui, path);
+    if (!controller) return;
+
+    let list = _guiChangeCallbacks.get(controller);
+
+    if (!list) {
+        list = [];
+        _guiChangeCallbacks.set(controller, list);
+
+        controller.onFinishChange(v => {
+            for (const cb of list) cb(v);
+        });
+    }
+
+    list.push(callback);
+
+    if (immediate) callback(controller.getValue());
 }

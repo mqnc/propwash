@@ -10,7 +10,7 @@ import { createTerrain } from './terrain.js'
 import { createDroneVisuals } from './dronevisuals.js'
 import { initSound, updateSound } from './sound.js'
 import { createCamera } from './camera.js'
-import { createGui } from './gui.js'
+import { createGui, onGuiChange } from './gui.js'
 import { createRenderPipeline } from './renderer.js'
 import { readInputs } from './inputs.js'
 
@@ -22,22 +22,23 @@ async function main() {
     const config = await loadConfig()
     console.assert(config.version == 1.0)
     console.assert(config.aircraft.type == "quadcopter")
-    const debug = config.settings.debug
 
     // gui
-    //createGui(config)
+    const gui = createGui(config)
 
     // scene
     const scene = new THREE.Scene();
     window.scene = scene
     scene.background = new THREE.Color(0x87ceeb);
-    if (debug) { scene.add(new THREE.AxesHelper(1)); }
+    const origin = new THREE.AxesHelper(1);
+    scene.add(origin);
+    onGuiChange(gui, "settings.debug", (debug) => { origin.visible = debug }, true)
     const gVector = new THREE.Vector3(...config.map.gravity)
     THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
     scene.visible = false
 
     // renderer
-    const { render, canvas, stepMotionBlurCamera } = createRenderPipeline(config, scene)
+    const { render, canvas, stepMotionBlurCamera } = createRenderPipeline(config, gui, scene)
 
     // resources
     const {
@@ -117,6 +118,14 @@ async function main() {
             if (!finished) {
                 document.getElementById('timer').innerText = `${mins.toString().padStart(2, '0')}:${secs.toFixed(2).padStart(5, '0')}`.replace('.', "'")
             }
+            fixedDebugLines.visible = e.data.debug.isActive
+            dynamicDebugLines.visible = e.data.debug.isActive
+            if (e.data.debug.isActive) {
+                if (e.data.debug.fixedVertices) {
+                    updateDebugRender(fixedDebugLines, e.data.debug.fixedVertices, e.data.debug.fixedColors)
+                }
+                updateDebugRender(dynamicDebugLines, e.data.debug.dynamicVertices, e.data.debug.dynamicColors)
+            }
             engineStats.update()
         }
         else if (e.data.type === "initCheckpoints") {
@@ -133,7 +142,8 @@ async function main() {
     })
 
     // debug
-    const debugGeometry = initDebugRender()
+    const fixedDebugLines = initDebugRender()
+    const dynamicDebugLines = initDebugRender()
 
     // trrain
     const { terrainObject, terrainMeshData, setActiveCheckpoints } = createTerrain(terrainModel, config, scene)
@@ -142,7 +152,6 @@ async function main() {
     // run graphics
     function animate() {
         requestAnimationFrame(animate);
-        if (debug) { updateDebugRender(world, debugGeometry) }
         droneMixer.setTime(Math.random() * 1000)
 
         if (keyPressed[' ']) {
@@ -151,7 +160,7 @@ async function main() {
         }
 
         const inputs = readInputs()
-        physicsWorker.postMessage({ inputs })
+        physicsWorker.postMessage({ inputs, debug: config.settings.debug })
         updateSound(soundData, inputs)
 
         render(selectedCamera)
