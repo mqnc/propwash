@@ -53,7 +53,7 @@ export function createRenderPipeline(config, gui, scene) {
 
     const motionBlur = createMotionBlurPass()
     composer.addPass(motionBlur.pass)
-    onGuiChange(gui, "settings.motionBlurShutterSpeed", (shutterSpeed) => {
+    onGuiChange(gui, ["settings.motionBlurShutterSpeed"], (shutterSpeed) => {
         if (shutterSpeed === Infinity) {
             motionBlur.pass.enabled = false
         }
@@ -69,7 +69,7 @@ export function createRenderPipeline(config, gui, scene) {
 
     const fxaa = new FXAAPass()
     composer.addPass(fxaa)
-    onGuiChange(gui, "settings.antiAlias", (enable) => { fxaa.enabled = enable }, true)
+    onGuiChange(gui, ["settings.antiAlias"], (enable) => { fxaa.enabled = enable }, true)
 
     const fisheye = createFisheyePass()
     composer.addPass(fisheye.pass)
@@ -97,8 +97,7 @@ export function createRenderPipeline(config, gui, scene) {
         );
     }
     window.addEventListener('resize', onResize);
-    onGuiChange(gui, "settings.rendererResolutionScale", onResize)
-    onGuiChange(gui, "settings.composerResolutionScale", onResize)
+    onGuiChange(gui, ["settings.rendererResolutionScale", "settings.composerResolutionScale"], onResize)
     onResize()
 
     const render = (selectedCamera) => {

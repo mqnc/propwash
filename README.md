@@ -92,6 +92,7 @@ The assets used in this project are subject to various licenses. They are **not 
 * test slowmotion
 * camera looks in flight direction?
 * can't set shutter speed to infinity with lil gui
+* clean up prop animation and play properly (instead of randomizing the frame)
 
 ## Neglected Physics
 

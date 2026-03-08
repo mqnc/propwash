@@ -86,7 +86,7 @@
             // mode: "random", // all checkpoints in arbitrary order
             // mode: {laps: 5}, // lap through all checkpoints in order 5 times, ends at start
             // checkpoints: [ "checkpoint1", "checkpoint2", "checkpoint3", ],
-            // exclude: [ "owl*", ], // regexes for excluding objects from other missions
+            exclude: [ ], // regexes for excluding objects from other missions
             checkpointScale: 1.0,
             checkpointSound: {
                 path: "assets/sound/406266__anthousai__hit-hollow-03.wav",

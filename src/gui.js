@@ -19,7 +19,12 @@ function getController(gui, path) {
         if (!folder) return null;
     }
 
-    return folder.controllers.find(c => c._name === prop);
+    let field = folder.controllers.find(c => c._name === prop);
+    if (field) { return field; }
+    let subfolder = folder.folders.find(f => f._title === prop);
+    if (subfolder) { return subfolder; }
+
+    return null
 }
 
 export function createGui(config) {
@@ -59,22 +64,27 @@ export function createGui(config) {
 
 const _guiChangeCallbacks = new WeakMap();
 
-export function onGuiChange(gui, path, callback, immediate = false) {
-    const controller = getController(gui, path);
-    if (!controller) return;
+export function onGuiChange(gui, paths, callback, immediate = false) {
+    // callback arguments are different for fields and folders
+    // fields: https://lil-gui.georgealways.com/#Controller#onFinishChange
+    // folders: https://lil-gui.georgealways.com/#GUI#onFinishChange
+    for (const path of paths) {
+        const controller = getController(gui, path);
+        if (!controller) return;
 
-    let list = _guiChangeCallbacks.get(controller);
+        let list = _guiChangeCallbacks.get(controller);
 
-    if (!list) {
-        list = [];
-        _guiChangeCallbacks.set(controller, list);
+        if (!list) {
+            list = [];
+            _guiChangeCallbacks.set(controller, list);
 
-        controller.onFinishChange(v => {
-            for (const cb of list) cb(v);
-        });
+            controller.onFinishChange(v => {
+                for (const cb of list) cb(v);
+            });
+        }
+
+        list.push(callback);
+
+        if (immediate) callback(controller.getValue());
     }
-
-    list.push(callback);
-
-    if (immediate) callback(controller.getValue());
 }

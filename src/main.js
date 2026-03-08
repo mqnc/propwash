@@ -7,7 +7,7 @@ import { keyPressed } from './inputs.js'
 import { loadConfig, dt } from './config.js'
 import { createStats } from './ui.js'
 import { createTerrain } from './terrain.js'
-import { createDroneVisuals } from './dronevisuals.js'
+import { createDrone } from './drone.js'
 import { initSound, updateSound } from './sound.js'
 import { createCamera } from './camera.js'
 import { createGui, onGuiChange } from './gui.js'
@@ -32,7 +32,7 @@ async function main() {
     scene.background = new THREE.Color(0x87ceeb);
     const origin = new THREE.AxesHelper(1);
     scene.add(origin);
-    onGuiChange(gui, "settings.debug", (debug) => { origin.visible = debug }, true)
+    onGuiChange(gui, ["settings.debug"], (debug) => { origin.visible = debug }, true)
     const gVector = new THREE.Vector3(...config.map.gravity)
     THREE.Object3D.DEFAULT_UP = gVector.clone().multiplyScalar(-1).normalize()
     scene.visible = false
@@ -41,7 +41,7 @@ async function main() {
     const { render, canvas, stepMotionBlurCamera } = createRenderPipeline(config, gui, scene)
 
     // resources
-    const {
+    let {
         physicsWorker,
         droneModel,
         propWav,
@@ -82,8 +82,7 @@ async function main() {
     scene.backgroundIntensity = config.background.backgroundMap.intensity
 
     // drone
-    const { droneNode, droneSize, droneMixer } = createDroneVisuals(droneModel, config, scene)
-    window.droneNode = droneNode
+    const drone = createDrone(droneModel, scene, config, gui)
 
     // cameras
     const fpv = createCamera(config.aircraft.camera.firstPerson)
@@ -93,7 +92,7 @@ async function main() {
     let selectedCamera = config.aircraft.camera.selected === "firstPerson" ? fpv.camera : tpv.camera
 
     // sound
-    const soundData = initSound(config, tpv.camera, droneNode, propWav, checkpointWav, musicWav)
+    const soundData = initSound(config, tpv.camera, drone.node, propWav, checkpointWav, musicWav)
 
     // physics world
     let finished = false
@@ -101,8 +100,7 @@ async function main() {
     physicsWorker.addEventListener("message", (e) => {
         if (e.data.type === "step") {
             scene.visible = true
-            droneNode.position.fromArray(e.data.drone.xyz)
-            droneNode.quaternion.fromArray(e.data.drone.qxyzw)
+            drone.updatePose(e.data.drone.xyz, e.data.drone.qxyzw)
             fpv.mount.position.fromArray(e.data.fpvCamera.xyz)
             fpv.mount.quaternion.fromArray(e.data.fpvCamera.qxyzw)
             tpv.mount.position.fromArray(e.data.tpvCamera.xyz)
@@ -152,7 +150,7 @@ async function main() {
     // run graphics
     function animate() {
         requestAnimationFrame(animate);
-        droneMixer.setTime(Math.random() * 1000)
+        drone.updateAnimation()
 
         if (keyPressed[' ']) {
             keyPressed[' '] = false
