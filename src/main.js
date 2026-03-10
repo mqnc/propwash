@@ -7,7 +7,7 @@ import { keyPressed } from './inputs.js'
 import { loadConfig, dt } from './config.js'
 import { createStats } from './ui.js'
 import { createTerrain } from './terrain.js'
-import { createDrone } from './drone.js'
+import { createDroneVisuals } from './dronevisuals.js'
 import { initSound, updateSound } from './sound.js'
 import { createCamera } from './camera.js'
 import { createGui, onGuiChange } from './gui.js'
@@ -82,7 +82,7 @@ async function main() {
     scene.backgroundIntensity = config.background.backgroundMap.intensity
 
     // drone
-    const drone = createDrone(droneModel, scene, config, gui)
+    const drone = createDroneVisuals(droneModel, scene, config, gui)
 
     // cameras
     const fpv = createCamera(config.aircraft.camera.firstPerson)
@@ -137,6 +137,9 @@ async function main() {
             }
             soundData.checkpointSound.play()
         }
+    })
+    onGuiChange(gui, [null], () => {
+        physicsWorker.postMessage({ "config": config })
     })
 
     // debug

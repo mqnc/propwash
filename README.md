@@ -93,6 +93,8 @@ The assets used in this project are subject to various licenses. They are **not 
 * camera looks in flight direction?
 * can't set shutter speed to infinity with lil gui
 * clean up prop animation and play properly (instead of randomizing the frame)
+* make inertia configurable
+* make compatible with other gamepads
 
 ## Neglected Physics
 

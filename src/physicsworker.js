@@ -1,5 +1,5 @@
 import { RAPIER } from './rapier.js'
-import { createDroneBody } from './dronebody.js'
+import { createDroneBody, updateDroneBody } from './dronebody.js'
 import { dt } from './config.js'
 import { clamp } from './utils.js'
 import { initControls, controlDrone } from './control.js'
@@ -32,13 +32,20 @@ async function main() {
 
     // config
     const config = await receive("config")
+    const configListeners = []
+    function onConfigUpdate(callback, immediate = false) {
+        configListeners.push(callback)
+        callback()
+    }
+    function triggerConfigUpdate() { for (const cb of configListeners) { cb() } }
 
     // world
     const world = new RAPIER.World({ x: config.map.gravity[0], y: config.map.gravity[1], z: config.map.gravity[2] });
-    world.timestep = dt * config.map.timeScale
+    onConfigUpdate(() => { world.timestep = dt * config.map.timeScale }, true)
 
     // drone
-    const { droneBody, droneCollider } = createDroneBody(config, world)
+    const droneBody = createDroneBody(config, world)
+    onConfigUpdate(() => { updateDroneBody(droneBody, config) })
 
     // terrain
     const terrain = await receive("terrain")
@@ -63,13 +70,24 @@ async function main() {
     mockScene.add(tpv.camTarget)
 
     // inputs
-    const controlData = initControls(config, dt)
+    let controlData
+    onConfigUpdate(() => { controlData = initControls(config, dt) }, true)
+    let trace = {
+        checkpoints: [], // for backtracking when stuck
+        nextCheckpoint: Math.ceil(0.5 / dt) // number of steps til next checkpoint
+    }
     let inputs = null
     let debug = false
     let firstDebugMessage = true
     self.addEventListener("message", (e) => {
-        inputs = e.data.inputs
-        debug = e.data.debug
+        if (Object.hasOwn(e.data, "inputs")) {
+            inputs = e.data.inputs
+            debug = e.data.debug
+        }
+        else if (Object.hasOwn(e.data, "config")) {
+            Object.assign(config, e.data.config) // config reference still works, all child references are not updated
+            triggerConfigUpdate()
+        }
     })
 
     // game logic
@@ -151,8 +169,8 @@ async function main() {
 
         world.step()
         let sensorHit = null
-        world.intersectionPairsWith(droneCollider, (sensorCollider) => {
-            const intersecting = world.intersectionPair(droneCollider, sensorCollider);
+        world.intersectionPairsWith(droneBody.collider(0), (sensorCollider) => {
+            const intersecting = world.intersectionPair(droneBody.collider(0), sensorCollider);
 
             if (intersecting) {
                 sensorHit = colliderNames.get(sensorCollider)
@@ -161,7 +179,7 @@ async function main() {
         });
 
         if (inputs) {
-            controlDrone(inputs, controlData, droneBody, config, dt)
+            controlDrone(inputs, controlData, droneBody, trace, config, dt)
         }
 
         const pos = droneBody.translation();

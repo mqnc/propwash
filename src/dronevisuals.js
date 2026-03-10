@@ -5,7 +5,7 @@ import { DRONE_LAYER } from './renderer.js'
 import { onGuiChange } from './gui.js'
 import { GLTFLoader } from './resources.js'
 
-export function createDrone(droneModel, scene, config, gui) {
+export function createDroneVisuals(droneModel, scene, config, gui) {
 
     let drone = {
         node: new THREE.Object3D(),

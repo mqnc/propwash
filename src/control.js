@@ -6,7 +6,7 @@ import { calcDrownInertia } from './dronebody.js'
 // import { readInputs } from './inputs.js'
 // import { updateSound } from './sound.js'
 
-export function initControls(config, dt) {
+export function initControls(config) {
 
     const g = Math.sqrt(
         Math.pow(config.map.gravity[0], 2)
@@ -21,10 +21,6 @@ export function initControls(config, dt) {
     const maxMotorDrag = 0.07 * maxSingleMotorThrust * (config.aircraft.propSize * inch) // according to ChatGPT
 
     const controlData = {
-        trace: {
-            checkpoints: [], // for backtracking when stuck
-            nextCheckpoint: Math.ceil(0.5 / dt) // number of steps til next checkpoint
-        },
         droneInertia,
         maxPitchRollTorque: 4 * lever * maxSingleMotorThrust,
         //maxYawTorque: 2 * (config.aircraft.wheelbase / 2) * maxMotorDrag,
@@ -35,10 +31,9 @@ export function initControls(config, dt) {
     return controlData
 }
 
-export function controlDrone(inputs, controlData, droneBody, config, dt) {
+export function controlDrone(inputs, controlData, droneBody, trace, config, dt) {
 
     const {
-        trace,
         droneInertia,
         maxPitchRollTorque,
         maxYawTorque,
