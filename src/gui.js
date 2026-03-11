@@ -69,7 +69,7 @@ export function onGuiChange(gui, paths, callback, immediate = false) {
     // fields: https://lil-gui.georgealways.com/#Controller#onFinishChange
     // folders: https://lil-gui.georgealways.com/#GUI#onFinishChange
     for (const path of paths) {
-        const controller = path? getController(gui, path) : gui;
+        const controller = path ? getController(gui, path) : gui;
         if (!controller) return;
 
         let list = _guiChangeCallbacks.get(controller);
@@ -85,6 +85,6 @@ export function onGuiChange(gui, paths, callback, immediate = false) {
 
         list.push(callback);
 
-        if (immediate) callback(controller.getValue());
+        if (immediate) callback(controller.getValue ? controller.getValue() : null);
     }
 }

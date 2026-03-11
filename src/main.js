@@ -1,5 +1,5 @@
 
-import { loadResources } from './resources.js'
+import { loadResources, HDRLoader } from './resources.js'
 import { THREE } from './three.js'
 import { initDebugRender, updateDebugRender } from './debug.js'
 import { setFromRPYdeg } from './utils.js'
@@ -25,6 +25,7 @@ async function main() {
 
     // gui
     const gui = createGui(config)
+    gui.hide()
 
     // scene
     const scene = new THREE.Scene();
@@ -52,6 +53,7 @@ async function main() {
         musicWav
     } = await loadResources(config, canvas)
     document.getElementById('battery').style.display = 'none'
+    gui.show()
 
     // capture mouse
     canvas.addEventListener("click", e => {
@@ -71,15 +73,31 @@ async function main() {
     }
 
     // lighting
+    const hdrLoader = new HDRLoader();
+
     envMap.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = envMap;
-    setFromRPYdeg(scene.environmentRotation, config.background.environmentMap.rollPitchYaw);
-    scene.environmentIntensity = config.background.environmentMap.intensity
+        onGuiChange(gui, ["background.environmentMap.path"], (path) => {
+        hdrLoader.load(path, (hdrMap) => { scene.environment = hdrMap; })
+    })
+    onGuiChange(gui, ["background.environmentMap.rollPitchYaw"], () => {
+        setFromRPYdeg(scene.environmentRotation, config.background.environmentMap.rollPitchYaw);
+    }, true)
+    onGuiChange(gui, ["background.environmentMap.intensity"], (intensity) => {
+        scene.environmentIntensity = intensity
+    }, true)
 
     bgMap.mapping = THREE.EquirectangularReflectionMapping;
     scene.background = bgMap;
-    setFromRPYdeg(scene.backgroundRotation, config.background.backgroundMap.rollPitchYaw);
-    scene.backgroundIntensity = config.background.backgroundMap.intensity
+        onGuiChange(gui, ["background.backgroundMap.path"], (path) => {
+        hdrLoader.load(path, (hdrMap) => { scene.background = hdrMap; })
+    })
+    onGuiChange(gui, ["background.backgroundMap.rollPitchYaw"], () => {
+        setFromRPYdeg(scene.backgroundRotation, config.background.backgroundMap.rollPitchYaw);
+    }, true)
+    onGuiChange(gui, ["background.backgroundMap.intensity"], (intensity) => {
+        scene.backgroundIntensity = intensity
+    }, true)
 
     // drone
     const drone = createDroneVisuals(droneModel, scene, config, gui)
@@ -92,7 +110,7 @@ async function main() {
     let selectedCamera = config.aircraft.camera.selected === "firstPerson" ? fpv.camera : tpv.camera
 
     // sound
-    const soundData = initSound(config, tpv.camera, drone.node, propWav, checkpointWav, musicWav)
+    const { propSounds, checkpointSound, music } = initSound(config, gui, tpv.camera, drone.node, propWav, checkpointWav, musicWav)
 
     // physics world
     let finished = false
@@ -135,7 +153,7 @@ async function main() {
             if (finished) {
                 document.getElementById('timer').style.color = "lime"
             }
-            soundData.checkpointSound.play()
+            checkpointSound.play()
         }
     })
     onGuiChange(gui, [null], () => {
@@ -162,7 +180,7 @@ async function main() {
 
         const inputs = readInputs()
         physicsWorker.postMessage({ inputs, debug: config.settings.debug })
-        updateSound(soundData, inputs)
+        updateSound(config, propSounds, inputs)
 
         render(selectedCamera)
         graphicsStats.update()
