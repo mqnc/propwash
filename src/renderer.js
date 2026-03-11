@@ -54,13 +54,7 @@ export function createRenderPipeline(config, gui, scene) {
     const motionBlur = createMotionBlurPass()
     composer.addPass(motionBlur.pass)
     onGuiChange(gui, ["settings.motionBlurShutterSpeed"], (shutterSpeed) => {
-        if (shutterSpeed === Infinity) {
-            motionBlur.pass.enabled = false
-        }
-        else {
-            motionBlur.pass.enabled = true
-            motionBlur.pass.uniforms.exposure.value = 1.0 / shutterSpeed
-        }
+
     }, true)
 
     //const ssaoPass = new SSAOPass(scene, new THREE.PerspectiveCamera());
@@ -103,26 +97,35 @@ export function createRenderPipeline(config, gui, scene) {
     const render = (selectedCamera) => {
         renderPass.camera = selectedCamera
 
-        // render mask for motion blur
-        renderer.setRenderTarget(maskTarget);
-        const colorBefore = renderer.getClearColor(new THREE.Color());
-        const backgroundBefore = scene.background
-        scene.background = new THREE.Color(0x000000);
-        renderer.setClearColor(0x000000, 1);
-        renderer.clear();
-        scene.overrideMaterial = maskMaterial;
-        selectedCamera.layers.set(DRONE_LAYER);
-        renderer.render(scene, selectedCamera);
-        scene.overrideMaterial = null;
-        selectedCamera.layers.set(0);
-        renderer.setRenderTarget(null);
-        renderer.setClearColor(colorBefore, 1);
-        scene.background = backgroundBefore;
+        if (selectedCamera.userData.exposure === 0) {
+            motionBlur.pass.enabled = false
+        }
+        else {
+            motionBlur.pass.enabled = true
+            motionBlur.pass.uniforms.exposure.value = selectedCamera.userData.exposure
 
-        motionBlur.updateTextures(
-            composer.readBuffer.depthTexture,
-            maskTarget.texture
-        )
+            // render mask for motion blur
+            renderer.setRenderTarget(maskTarget);
+            const colorBefore = renderer.getClearColor(new THREE.Color());
+            const backgroundBefore = scene.background
+            scene.background = new THREE.Color(0x000000);
+            renderer.setClearColor(0x000000, 1);
+            renderer.clear();
+            scene.overrideMaterial = maskMaterial;
+            selectedCamera.layers.set(DRONE_LAYER);
+            renderer.render(scene, selectedCamera);
+            scene.overrideMaterial = null;
+            selectedCamera.layers.set(0);
+            renderer.setRenderTarget(null);
+            renderer.setClearColor(colorBefore, 1);
+            scene.background = backgroundBefore;
+
+            motionBlur.updateTextures(
+                composer.readBuffer.depthTexture,
+                maskTarget.texture
+            )
+        }
+
         fisheye.updateUniforms(selectedCamera)
         composer.render()
     }
@@ -183,6 +186,7 @@ function createFisheyePass() {
     const updateUniforms = (camera) => {
         pass.uniforms.height.value = Math.tan(camera.fov / 2 * deg)
         pass.uniforms.aspectRatio.value = camera.aspect
+        pass.uniforms.strength.value = camera.userData.fishEyeStrength
     }
 
     return { pass, updateUniforms }

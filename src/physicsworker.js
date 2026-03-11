@@ -188,8 +188,8 @@ async function main() {
         const droneQuaternion = new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w)
 
         // update camera
-        fpv.update(dronePosition, droneQuaternion)
-        tpv.update(dronePosition, droneQuaternion)
+        fpv.update(config.aircraft.camera.firstPerson, dronePosition, droneQuaternion)
+        tpv.update(config.aircraft.camera.thirdPerson, dronePosition, droneQuaternion)
 
         // update graphics
         const message = {

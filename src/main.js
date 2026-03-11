@@ -107,7 +107,13 @@ async function main() {
     scene.add(fpv.mount)
     const tpv = createCamera(config.aircraft.camera.thirdPerson)
     scene.add(tpv.mount)
-    let selectedCamera = config.aircraft.camera.selected === "firstPerson" ? fpv.camera : tpv.camera
+    let selectedCamera = config.aircraft.camera.preselected === "firstPerson" ? fpv.camera : tpv.camera
+    onGuiChange(gui, ["aircraft.camera.firstPerson.fieldOfView"], (fov) => { fpv.resize() })
+    onGuiChange(gui, ["aircraft.camera.firstPerson.fishEyeStrength"], (s) => { fpv.camera.userData.fishEyeStrength = s })
+    onGuiChange(gui, ["aircraft.camera.firstPerson.shutterSpeed"], (s) => { fpv.camera.userData.exposure = 1 / s })
+    onGuiChange(gui, ["aircraft.camera.thirdPerson.fieldOfView"], (fov) => { tpv.resize() })
+    onGuiChange(gui, ["aircraft.camera.thirdPerson.fishEyeStrength"], (s) => { tpv.camera.userData.fishEyeStrength = s })
+    onGuiChange(gui, ["aircraft.camera.thirdPerson.shutterSpeed"], (s) => { tpv.camera.userData.exposure = 1 / s })
 
     // sound
     const { propSounds, checkpointSound, music } = initSound(config, gui, tpv.camera, drone.node, propWav, checkpointWav, musicWav)

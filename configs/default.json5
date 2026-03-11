@@ -6,7 +6,6 @@
         composerResolutionScale: 2.0, // virtual image before fisheye effect
         rendererResolutionScale: 1.0, // final rendering
         antiAlias: true,
-        motionBlurShutterSpeed: 480, // 1/s (Infinity for no motion blur)
     },
 
     aircraft: {
@@ -54,15 +53,19 @@
                 position: [ 0.2, 0.0, 0.0, ], // m
                 rollPitchYaw: [ 0.0, 40.0, 0.0, ], // deg
                 fieldOfView: 150, // deg diagonal
-                timeConstant: 0.0001, // first order smoothing of pose
+                fishEyeStrength: 1.0, // 0 = perspective .. 1 = stereographic
+                shutterSpeed: 480, // 1/s (Infinity for no motion blur)
+                poseTimeConstant: 0.0001, // first order smoothing
             },
             thirdPerson: {
                 position: [ -1.0, 0.0, 0.6, ], // m
                 rollPitchYaw: [ 0.0, 40.0, 0.0, ], // deg
                 fieldOfView: 90, // deg diagonal
-                timeConstant: 0.01, // first order smoothing of pose
+                fishEyeStrength: 1.0, // 0 = perspective .. 1 = stereographic
+                shutterSpeed: 480, // 1/s (Infinity for no motion blur)
+                poseTimeConstant: 0.01, // first order smoothing
             },
-            selected: "firstPerson",
+            preselected: "firstPerson",
         },
     },
 

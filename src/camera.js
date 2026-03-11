@@ -13,12 +13,13 @@ export function createCameraAnchor(camConfig, avoidCollision = false, world = nu
     camAnchor.position.set(...camConfig.position)
     camAnchor.quaternion.copy(rpyDegToQuat(camConfig.rollPitchYaw))
 
-    function update(position, quaternion) {
-        const alpha = camConfig.timeConstant == 0 ? 1 : 1.0 - Math.exp(-dt / camConfig.timeConstant)
-        camTarget.position.lerp(position, alpha)
-        camTarget.quaternion.slerp(quaternion, alpha)
+    function update(camConfig, dronePosition, droneQuaternion) {
+        const alpha = camConfig.poseTimeConstant == 0 ? 1 : 1.0 - Math.exp(-dt / camConfig.poseTimeConstant)
+        camTarget.position.lerp(dronePosition, alpha)
+        camTarget.quaternion.slerp(droneQuaternion, alpha)
 
         camAnchor.position.set(...camConfig.position)
+        camAnchor.quaternion.copy(rpyDegToQuat(camConfig.rollPitchYaw))
 
         if (avoidCollision) {
             const ray = new RAPIER.Ray(
@@ -43,14 +44,16 @@ export function createCameraAnchor(camConfig, avoidCollision = false, world = nu
 
 export function createCamera(camConfig) {
     // for rendering
-    const halfDiagonal = Math.tan(camConfig.fieldOfView * deg / 2)
     const mount = new THREE.Object3D()
     const camera = new THREE.PerspectiveCamera(90, 1, 0.1, 1000);
     mount.add(camera)
     camera.quaternion.set(-0.5, -0.5, 0.5, 0.5) // rotate to match drone coordinate system
+    camera.userData.fishEyeStrength = camConfig.fishEyeStrength
+    camera.userData.exposure = 1 / camConfig.shutterSpeed
 
     function resize() {
         const aspect = window.innerWidth / window.innerHeight
+        const halfDiagonal = Math.tan(camConfig.fieldOfView * deg / 2)
         const halfVertical = halfDiagonal / Math.sqrt(aspect * aspect + 1)
         const vfov = 2 * Math.atan(halfVertical) / deg
         camera.aspect = aspect;
@@ -60,5 +63,5 @@ export function createCamera(camConfig) {
     window.addEventListener("resize", resize)
     resize()
 
-    return { mount, camera }
+    return { mount, camera, resize }
 }

@@ -27,7 +27,7 @@
                 position: [ -1.0, 0.0, 0.3, ], // m
                 rollPitchYaw: [ 0.0, 15.0, 0.0, ], // deg
             },
-            selected: "thirdPerson",
+            preselected: "thirdPerson",
         },
     },
 
